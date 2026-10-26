@@ -1,103 +1,67 @@
 # MRI plane projection
 
-This is my project for Exercise 1
+This is my project for Exercise 1.
 
-The program reads a 3D MRI from an NRRD file and takes 2D sections through it. A CSV file gives the points for each section. Each row becomes one frame in the output MP4.
-
-It is written in Java and handles both plane shapes from the assignment: an isosceles triangle and a four-point section.
+The program is written in Java. It reads a 3D MRI file, creates 2D images of the planes given in a CSV file, and puts them into a video. Each CSV row becomes one video frame.
 
 ## How to run
 
-Open a terminal in the project folder and run:
+You need Java 17 or newer and FFmpeg installed. Run these commands from the project folder:
 
 ```powershell
-javac -d out src/*.java tests/*.java
+javac -d out src/*.java
 java -cp out Projection MRHead_1.nrrd planes.csv projection.mp4
 ```
 
-The arguments are the MRI file, the plane CSV, and the output video. The output folder must already exist.
+The three arguments are:
 
-In IntelliJ, run `Projection` with `MRHead_1.nrrd planes.csv projection.mp4` as the program arguments and the project folder as the working directory.
+- `MRHead_1.nrrd`: the MRI data.
+- `planes.csv`: the points that define each plane.
+- `projection.mp4`: the output video.
 
-If FFmpeg is installed somewhere else, set its path before running:
+In IntelliJ, run the `Projection` class with those three filenames as the program arguments.
+
+FFmpeg must be on PATH. If it is installed at `C:\ffmpeg\bin\ffmpeg.exe`, you can set it in PowerShell:
 
 ```powershell
 $env:FFMPEG = 'C:\ffmpeg\bin\ffmpeg.exe'
 ```
 
-## Input
-
-The reader supports signed and unsigned 8-, 16-, and 32-bit integers, with raw, gzip, or ASCII data in the NRRD file. It reads the size and spatial information from the header.
-
-The CSV has no header. A row contains either 9 numbers for points `a,b,c`, or 12 numbers for `a1,a2,b,c`. Each point is written as `x,y,z`. These are world coordinates from the MRI, not array indices. The supplied MRI uses LPS coordinates.
-
-The two side lengths must agree within `0.001`. Four-point sections must also lie on the same plane, with the top edge no wider than the bottom. Invalid rows produce an error with the line number.
-
 ## How it works
 
-The algorithm moves down the two sides of the section one row at a time. At each row, it samples between the sides and copies the nearest voxel value into the image. Samples outside the MRI are zero.
+The CSV has no header. Each row contains three or four points, with each point written as `x,y,z`. The points use the MRI's world coordinates.
 
-The images are converted to grayscale and joined into a video at 30 FPS. Smaller images get a black border so every frame has the same size. [ALGORITHM.md](ALGORITHM.md) contains the formulas and rounding choices.
+The program goes through each plane row by row. It takes the value of the nearest MRI voxel and uses it as a pixel in the image. Points outside the MRI get a value of zero. FFmpeg joins the grayscale images into a video.
 
-## Examples
+The full algorithm is in [ALGORITHM.md](ALGORITHM.md).
 
-[projection.mp4](projection.mp4) uses the original three rows in `planes.csv`, so it only lasts 0.1 seconds. [demo.mp4](demo.mp4) has 90 sections and lasts 3 seconds:
+## Results
 
-```powershell
-java -cp out Projection MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4
-```
+[projection.mp4](projection.mp4) has three frames because `planes.csv` has three rows. At 30 FPS, it lasts 0.1 seconds. [demo.mp4](demo.mp4) is a longer example with 90 frames and lasts 3 seconds.
 
+The tests check known image values, different plane directions, invalid input, and video output. In the speed test on a 500 x 500 x 500 byte volume, the slowest measured batch was 361 FPS. Loading the MRI and making the video were not included in that timing.
 
-## Tests and speed
-
-The tests use small volumes with known voxel values. They check the image values, rotated planes, invalid input, and video output.
-
-```powershell
-java -cp out RegressionTests
-py tests/integration_test.py
-```
-
-The video tests need Python 3 and FFprobe. Use `python3` instead of `py` if needed. The recorded run passed 1002 Java assertions and 24 video/CLI checks; these are individual checks, not 1026 separate test cases.
-
-To measure projection speed:
-
-```powershell
-java -Xms256m -Xmx1g -cp out Benchmark
-```
-
-On the test computer, a 500 x 500 x 500 byte volume gave mean batch speeds of 540 FPS for a rectangle, 782 FPS for a triangle, and 386 FPS for an oblique section. The slowest batch was 361 FPS, above the assignment's 30 FPS minimum and 100 FPS target. Loading and video encoding are outside the timer.
+Test commands and full results are in [EXPERIMENT.md](EXPERIMENT.md).
 
 ## Q&A
 
-### 1. How is the plane p defined?
+### How is the plane p defined?
 
-The plane is represented by three or four 3D points. Each point has coordinates `(x,y,z)`.
+A plane is given by three or four 3D points.
 
-For three points `a,b,c`, the points form an isosceles triangle with `a` as the top vertex:
+With three points `a,b,c`, the shape is an isosceles triangle. The distances from `a` to `b` and from `a` to `c` must differ by less than `0.001`. The points must not all be on one straight line.
 
-```text
-abs(dist(a,b) - dist(a,c)) < EPS
-```
+With four points `a1,a2,b,c`:
 
-`EPS` is `0.001`. The points must not all lie on one straight line, so they define a unique plane.
+- The lengths `a1` to `b` and `a2` to `c` must differ by less than `0.001`.
+- The top edge `a1` to `a2` must be no longer than the bottom edge `b` to `c`.
+- All four points must be on the same plane.
 
-For four points `a1,a2,b,c`, the conditions are:
+These points define the part of the plane used to create the image.
 
-- The two side lengths are approximately equal: `abs(dist(a1,b) - dist(a2,c)) < EPS`.
-- The top edge is no longer than the bottom edge: `dist(a1,a2) <= dist(b,c)`.
-- All four points lie on the same plane.
+## Other files
 
-The distance between two points is calculated as:
-
-```text
-dist(u,v) = sqrt((u.x-v.x)^2 + (u.y-v.y)^2 + (u.z-v.z)^2)
-```
-
-These points also bound the part of the plane to sample. The algorithm moves down the two sides and samples the MRI between them to create the 2D image.
-
-## Documents
-
-- [SRS.md](SRS.md): requirements and limits.
-- [ALGORITHM.md](ALGORITHM.md): algorithm and class structure.
-- [datasets/README.md](datasets/README.md): data files and how to generate them.
-- [EXPERIMENT.md](EXPERIMENT.md): test results, benchmark settings, and computer details.
+- [SRS.md](SRS.md): project requirements.
+- [ALGORITHM.md](ALGORITHM.md): detailed explanation of the algorithm.
+- [datasets/README.md](datasets/README.md): information about the data files.
+- [EXPERIMENT.md](EXPERIMENT.md): tests and performance results.

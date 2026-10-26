@@ -6,13 +6,6 @@ The goal is to take a 3D MRI file and create 2D images from different planes ins
 
 The project is written in Java. It supports planes defined by an isosceles triangle or by four points, as described in the assignment.
 
-## What you need
-
-- Java JDK 17 or newer.
-- FFmpeg installed and available on PATH.
-- Python 3 and FFprobe if you want to run the video tests.
-
-I tested the project on Windows 11 with Java 22.
 
 ## How to run
 

@@ -47,7 +47,6 @@ The images are converted to grayscale and joined into a video at 30 FPS. Smaller
 java -cp out Projection MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4
 ```
 
-There is also a [mixed-plane example](datasets/mixed-demo.mp4) using a triangle and a four-point section with different sizes.
 
 ## Tests and speed
 

@@ -1,10 +1,10 @@
 # Software requirements specification
 
-Exercise 1: MRI plane projection. Version 1.0, 2026-10-26.
+Exercise 1: MRI plane projection. Version 1.1, 2026-10-27.
 
 ## Goal
 
-Read a 3D NRRD volume and a CSV list of planes, then produce an MP4 with one frame per plane in the same order. The project uses Java.
+Read a 3D NRRD volume and a CSV list of planes, then produce an MP4 with one frame per plane in the same order. The project uses Java 8.
 
 ## Input and output
 
@@ -41,7 +41,7 @@ The assignment requires at least 30 projection FPS on a `500 x 500 x 500` byte v
 
 The project must include build/run instructions, an algorithm description, a defined dataset, a testing strategy, and an experiment report with an output video. Code and documentation are committed to the GitHub repository as work is completed.
 
-Loading, geometry checks, CSV parsing, and projection have separate classes. The program closes streams and removes its temporary files after success or handled failure. Images and the video canvas are limited to 16 million pixels; volume size is also limited by available heap memory.
+The code uses ordinary classes, arrays, loops, and methods. Loading, geometry checks, CSV parsing, and projection have separate classes. The program closes streams and removes its temporary files after success or handled failure. Images and the video canvas are limited to 16 million pixels; volume size is also limited by available heap memory.
 
 ## Design choices
 
@@ -53,12 +53,12 @@ Missing spatial metadata uses zero origin and identity directions, scaled by `sp
 
 Detached NRRD data, nonzero byte/line skips, nonspatial axes, floating-point values, and unsupported encodings are rejected. Singular spatial transforms are also rejected. The code does not automatically convert LPS coordinates to RAS.
 
-The project needs JDK 17+ and FFmpeg, found through PATH or the `FFMPEG` environment variable. Tests were run on Windows 11 with Java 17 and Java 22; other operating systems have not been tested.
+The project needs JDK 8 and FFmpeg, found through PATH or the `FFMPEG` environment variable. The current code was compiled and tested on Windows 11 with Java 8; other operating systems have not been tested. IntelliJ uses Java 8 language and bytecode settings.
 
 ## Checking the requirements
 
 The Java tests check known voxel values, coordinate transforms, plane geometry, rounding, and invalid input. The Python test runs the CLI, decodes the video, and checks frame count, order, size, image content, and failure behavior.
 
-The recorded run passed 1002 Java assertions and 24 video/CLI checks. These counts include repeated checks across pixels and file formats. The slowest measured benchmark batch was 361 FPS. Test logs and the measurement setup are in [EXPERIMENT.md](EXPERIMENT.md). A direct comparison in 3D Slicer was not performed.
+The recorded run passed 1002 Java assertions and 24 video/CLI checks. These counts include repeated checks across pixels and file formats. The slowest measured Java 8 benchmark batch was about 686 FPS. Test logs and the measurement setup are in [EXPERIMENT.md](EXPERIMENT.md). A direct comparison in 3D Slicer was not performed.
 
 The [dataset notes](datasets/README.md) describe the input files. The [README](README.md) contains run commands and links to the example videos.

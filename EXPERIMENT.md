@@ -1,23 +1,23 @@
 # Test and performance results
 
-Recorded on 2026-10-26 (Asia/Jerusalem). The raw output is in [experiments](experiments/README.md).
+These results are for the Java 8 version, tested on 2026-10-27 (Asia/Jerusalem). Logs are in [experiments](experiments/README.md).
 
 ## Test computer
 
 - AMD Ryzen 9 7940HS, 8 cores and 16 logical processors.
-- 31,982,637,056 bytes of RAM, about 29.79 GiB.
+- About 29.79 GiB of RAM.
 - Windows 11 Pro, version 10.0.26200, x64.
-- Temurin OpenJDK 22.0.2+9, 64-bit Server VM.
-- Benchmark heap: `-Xms256m -Xmx1g`.
+- Temurin JDK 8u504-b01, 64-bit Server VM.
+- Benchmark heap settings: `-Xms256m -Xmx1g`.
 
-Projection runs on one CPU thread.
+The program uses one CPU thread for projection. Java 8 reported a maximum heap of 954,728,448 bytes with those settings.
 
 ## Commands
 
-Run these from the project folder with FFmpeg and FFprobe on PATH:
+Use a JDK 8 terminal, with FFmpeg and FFprobe on PATH:
 
 ```powershell
-javac -Xlint:all -d out src/*.java tests/*.java
+javac -source 1.8 -target 1.8 -Xlint:all -d out src/*.java tests/*.java
 java -cp out RegressionTests
 py tests/integration_test.py
 java -Xms256m -Xmx1g -cp out Benchmark
@@ -26,26 +26,28 @@ java -cp out Projection MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4
 java -cp out Projection datasets/coded-u16-rotated.nrrd datasets/mixed-planes.csv datasets/mixed-demo.mp4
 ```
 
-The Python test uses only the standard library. Use `python3` instead of `py` if needed.
+The Python script is an extra video test. It needs Python 3 and only uses the standard library. Use `python3` instead of `py` if needed. The application, data generator, benchmark, and Java tests all compile with Java 8.
 
-## Correctness tests
+## Test results
 
-Compilation with `-Xlint:all` finished without warnings. The Java suite passed 1002 assertions. Many are pixel checks or the same check repeated for different file formats, so this is not a count of separate test cases.
+The actual Java 8 compiler finished without warnings. The application and Java test classes have bytecode version 52, which is the Java 8 version.
 
-The tests compare sampled values with known values in generated volumes. They cover rectangles, triangles, oblique planes, rotated and nonorthogonal coordinates, fractional lengths, nearest-neighbor rounding, points outside the volume, signed/unsigned limits, and invalid input.
+The Java tests passed 1002 assertions. Many assertions check individual pixels or repeat the same check for different data types. They cover known image values, triangles, four-point sections, oblique planes, rotated coordinates, fractional lengths, rounding, points outside the MRI, and invalid files.
 
-The Python suite passed 24 video/CLI checks. It calculates expected images from the synthetic volume's known value formula and an independent coordinate conversion, then compares them with decoded video frames in order. It also checks different frame sizes, a shorter second run, stale PNG files, missing arguments, bad CSV rows, and encoder failures. Failed runs preserved the existing output video.
+The Python test passed 24 video/CLI checks while using Java 8 for its Java processes. It checks frame count, order, dimensions, and content. It also checks invalid arguments, CSV errors, missing or misconfigured FFmpeg, old PNG files, and a shorter second run. A failed run preserved the existing output video.
 
-H.264 changes pixel values slightly. For these video comparisons, the test allows a mean absolute error of 8 and a maximum error of 30 on the 0..255 grayscale range:
+The video test calculates expected images from known voxel values and compares them with decoded frames. H.264 changes pixel values slightly, so the allowed mean error is 8 and maximum error is 30 on the 0..255 grayscale scale:
 
 | Frame | Mean absolute error | Maximum error |
 | --- | --- | --- |
 | Four-point section | 2.094 | 9 |
 | Triangle | 4.521 | 21 |
 
-Raw image values are checked exactly in the Java tests. No direct visual comparison in 3D Slicer was performed.
+Raw image values are checked exactly in the Java tests. A direct comparison in 3D Slicer was not performed. The [Java 8 verification log](experiments/java8-verification-2026-10-27.txt) records the commands, JDK version, and results.
 
 ## Output videos
+
+All three videos were regenerated using Java 8. FFprobe confirmed their frame counts and dimensions, and FFmpeg decoded them without errors.
 
 | Video | Frames | Size | Duration at 30 FPS |
 | --- | --- | --- | --- |
@@ -53,15 +55,13 @@ Raw image values are checked exactly in the Java tests. No direct visual compari
 | [demo.mp4](demo.mp4) | 90 | 100 x 106 | 3 seconds |
 | [mixed-demo.mp4](datasets/mixed-demo.mp4) | 2 | 12 x 8 | About 0.067 seconds |
 
-FFprobe confirmed the frame counts and sizes. FFmpeg decoded all three without errors. The original example is short because `planes.csv` has only three rows. The longer demo uses 90 adjacent MRI sections.
+The original example is short because `planes.csv` has three rows. The longer demo uses 90 adjacent sections. The root PNG files are older examples; the current program creates its own temporary frames.
 
-The root PNG files are older examples. The current program creates its own temporary frames for each run.
+## Speed test
 
-## Benchmark setup
+The benchmark loads a generated `500 x 500 x 500` unsigned-byte NRRD, containing 125,000,000 bytes. Voxel values are `(x+3*y+7*z) & 255`.
 
-The benchmark uses a generated `500 x 500 x 500` unsigned-byte NRRD. Its voxel values are `(x+3*y+7*z) & 255`, and the loaded volume contains 125,000,000 bytes. Dataset generation and loading happen before timing.
-
-For each plane, the program runs 150 warmup projections, then five batches of 300 measured projections. The timer includes geometry setup inside the projection method, output allocation, sampling, and reading one changing output pixel for a checksum. It excludes loading, grayscale conversion, PNG saving, and MP4 encoding.
+For each plane, it runs 150 warmup projections and then five batches of 300 measured projections. The timer includes geometry setup inside the projection method, output allocation, sampling, and reading one output pixel for a checksum. Loading, grayscale conversion, saving PNGs, and making the video are outside the timer.
 
 The planes use identity world/voxel coordinates:
 
@@ -69,32 +69,18 @@ The planes use identity world/voxel coordinates:
 - Triangle: `(250,0,250),(0,400,250),(500,400,250)`.
 - Oblique section: `(0,-1,0),(500,-1,0),(0,399,300),(500,399,300)`.
 
-Some boundary points are outside the volume, where sampling returns zero. Each projection allocates a new output image, so allocation and any garbage collection during the batch are included in the timing.
-
-## Benchmark results
+Some boundary points are outside the volume and return zero. Each projection creates a new image, so allocation and any garbage collection during the batch are included.
 
 | Plane | Output size | Mean batch FPS | Minimum FPS | Maximum FPS | Checksum per batch |
 | --- | --- | --- | --- | --- | --- |
-| Rectangle | 500 x 500 | 540.199 | 385.962 | 640.536 | 37948 |
-| Triangle | 500 x 472 | 782.159 | 768.052 | 793.200 | 11909 |
-| Oblique | 500 x 500 | 386.455 | 361.359 | 394.760 | 38240 |
+| Rectangle | 500 x 500 | 743.967 | 685.956 | 762.845 | 37948 |
+| Triangle | 500 x 472 | 1506.170 | 1498.288 | 1513.033 | 11909 |
+| Oblique | 500 x 500 | 781.179 | 774.319 | 785.833 | 38240 |
 
-For each batch, `FPS = 300 * 1000 / totalMilliseconds`. The mean in the table is the arithmetic mean of the five batch FPS values. Batch times are in [the original log](experiments/benchmark-2026-10-26.txt).
+For each batch, `FPS = 300 * 1000 / totalMilliseconds`. The mean is the arithmetic mean of the five batch FPS values. The complete output is in [the Java 8 benchmark log](experiments/java8-benchmark-2026-10-27.txt).
 
-Every measured batch passed the assignment's 30 FPS minimum and 100 FPS target on this computer. The slowest batch was 361.359 FPS. The triangle samples a smaller region than the rectangle. The reason for the variation between batches was not measured.
+Every batch passed the assignment's 30 FPS minimum and 100 FPS target on this computer. The slowest batch was 685.956 FPS. These are projection speeds for the listed inputs and machine, not video encoding speeds.
 
-These numbers apply to the listed computer, volume, and planes. They do not measure video encoding speed. The tests cover the cases described above, and the supported file formats and memory limits are listed in [SRS.md](SRS.md).
+## Earlier results
 
-## Java 17 compatibility check
-
-On 2026-10-27, the project was also checked with Temurin JDK 17.0.20.1+1 on the same Windows computer. The downloaded JDK archive was checked against the SHA-256 from Adoptium. It was kept in the ignored output folder without changing the system Java installation.
-
-```powershell
-javac --release 17 -Xlint:all -d out src/*.java tests/*.java
-java -cp out RegressionTests
-py tests/integration_test.py
-```
-
-These commands used the Java 17 bin directory first on PATH, including the Java processes started by the Python test. Compilation finished without warnings, all 1002 Java assertions and 24 video/CLI checks passed, and the supplied MRI demo produced a three-frame 100 x 106 video that decoded without errors.
-
-The [Java 17 verification log](experiments/java17-verification-2026-10-27.txt) records the version, commands, and results. The performance measurements above were made on Java 22; the benchmark was not repeated on Java 17.
+The logs from the earlier Java 22 and Java 17 versions are kept in [experiments](experiments/README.md). They describe earlier versions. The results above are from the current Java 8 code. The old and new measurements were not a controlled JVM comparison, so they do not establish why the speed changed.

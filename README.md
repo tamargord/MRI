@@ -2,14 +2,14 @@
 
 This is my project for Exercise 1.
 
-The program is written in Java. It reads a 3D MRI file, creates 2D images of the planes given in a CSV file, and puts them into a video. Each CSV row becomes one video frame.
+The program is written in Java 8. It reads a 3D MRI file, creates 2D images of the planes given in a CSV file, and puts them into a video. Each CSV row becomes one video frame.
 
 ## How to run
 
-You need Java 17 or newer and FFmpeg installed. The project has been tested on Java 17. Run these commands from the project folder:
+You need JDK 8 and FFmpeg installed. Run these commands from the project folder:
 
 ```powershell
-javac --release 17 -d out src/*.java
+javac -d out src/*.java
 java -cp out Projection MRHead_1.nrrd planes.csv projection.mp4
 ```
 
@@ -19,7 +19,7 @@ The three arguments are:
 - `planes.csv`: the points that define each plane.
 - `projection.mp4`: the output video.
 
-In IntelliJ, run the `Projection` class with those three filenames as the program arguments.
+In IntelliJ, select JDK 8 as the project SDK. Then run `Projection` with those three filenames as the program arguments.
 
 FFmpeg must be on PATH. If it is installed at `C:\ffmpeg\bin\ffmpeg.exe`, you can set it in PowerShell:
 
@@ -39,7 +39,7 @@ The full algorithm is in [ALGORITHM.md](ALGORITHM.md).
 
 [projection.mp4](projection.mp4) has three frames because `planes.csv` has three rows. At 30 FPS, it lasts 0.1 seconds. [demo.mp4](demo.mp4) is a longer example with 90 frames and lasts 3 seconds.
 
-The tests check known image values, different plane directions, invalid input, and video output. In the speed test on a 500 x 500 x 500 byte volume, the slowest measured batch was 361 FPS. Loading the MRI and making the video were not included in that timing.
+The tests check known image values, different plane directions, invalid input, and video output. In the speed test on a 500 x 500 x 500 byte volume, the slowest measured batch was about 686 FPS on Java 8. Loading the MRI and making the video were not included in that timing.
 
 Test commands and full results are in [EXPERIMENT.md](EXPERIMENT.md).
 

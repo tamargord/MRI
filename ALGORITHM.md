@@ -1,5 +1,7 @@
 # Projection algorithm
 
+The code uses Java 8. Start with `Point3D`, which is a class with three coordinate fields and basic vector methods. Then read `Plane` for the point checks and `Projection.project` for the row-by-row algorithm.
+
 ## Reading the volume
 
 `MRIReader` reads the NRRD header and then decodes the data. NRRD stores the first axis fastest, so `Volume` stores a voxel at:
@@ -8,7 +10,7 @@
 index = x + sx * (y + sy * z)
 ```
 
-The buffer uses `byte`, `short`, or `int`, depending on the input type. Sample values are returned as `long`, which can hold the full unsigned 32-bit range, including `4294967295`. Signed input keeps its signed values.
+The volume uses a `byte[]`, `short[]`, or `int[]`, depending on the input type. Only the array for that type is allocated. Sample values are returned as `long`, which can hold the full unsigned 32-bit range, including `4294967295`. Signed input keeps its signed values.
 
 ## World coordinates and voxel indices
 
@@ -72,7 +74,7 @@ Each run creates its own temporary PNG folder and passes the exact frame count t
 
 | Class | What it does |
 | --- | --- |
-| `Point3D` | Stores a finite 3D point or vector and provides vector operations. |
+| `Point3D` | Stores `x`, `y`, and `z` and provides vector operations. |
 | `Volume` | Stores voxels and converts between world and voxel coordinates. |
 | `MRIReader` | Reads and checks the NRRD header and data. |
 | `Plane` | Checks geometry and calculates image dimensions. |

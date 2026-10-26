@@ -1,6 +1,6 @@
 # MRI Plane Projection
 
-This is my project for Exercise 1 in Introduction to Software Engineering.
+This is my project for Exercise 1
 
 The goal is to take a 3D MRI file and create 2D images from different planes inside it. The program reads the planes from a CSV file and joins the images into an MP4 video. Each row in the CSV becomes one frame in the video.
 

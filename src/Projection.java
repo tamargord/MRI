@@ -73,11 +73,12 @@ public final class Projection {
             Path log=directory.resolve("ffmpeg.log");
             Process process;
             try {
-                process=new ProcessBuilder(ffmpeg,"-hide_banner","-loglevel","error","-y","-framerate","30","-start_number","0","-i",directory.resolve("frame_%06d.png").toString(),"-frames:v",Integer.toString(planes.size()),"-c:v","libx264","-pix_fmt","yuv420p","-movflags","+faststart",encoded.toString()).redirectErrorStream(true).redirectOutput(log.toFile()).start();
+                process=new ProcessBuilder(ffmpeg,"-hide_banner","-loglevel","error","-y","-framerate","30","-start_number","0","-i",directory.resolve("frame_%06d.png").toString(),"-frames:v",Integer.toString(planes.size()),"-c:v","libx264","-crf","18","-pix_fmt","yuv420p","-movflags","+faststart",encoded.toString()).redirectErrorStream(true).redirectOutput(log.toFile()).start();
             } catch(IOException e) {throw new IOException("Cannot start FFmpeg; install it on PATH or set FFMPEG to its executable path",e);}
             int status;
             try { status=process.waitFor(); } catch(InterruptedException e) {process.destroyForcibly(); process.waitFor();throw e;}
             if(status!=0) throw new IOException("FFmpeg failed (exit "+status+"): "+Files.readString(log));
+            if(Files.size(encoded)==0) throw new IOException("FFmpeg produced an empty video; check the FFMPEG executable setting");
             Files.move(encoded,output,StandardCopyOption.REPLACE_EXISTING);
             System.out.printf(Locale.ROOT,"Created %s: %d frames, %dx%d, 30 playback FPS%n",output,planes.size(),width,height);
             System.out.printf(Locale.ROOT,"Projection-only total: %.3f ms (unwarmed demo timing; use Benchmark for throughput)%n",projectionNanos/1e6);

@@ -1,0 +1,98 @@
+$ javac -Xlint:all -d out src\Benchmark.java src\CSVReader.java src\DatasetGenerator.java src\MRIReader.java src\Plane.java src\Point3D.java src\Projection.java src\Volume.java tests\RegressionTests.java
+
+$ java -cp out RegressionTests
+
+PASS: 1002 checks (loading, transforms, analytic projections, malformed inputs, display)
+
+$ py tests/integration_test.py
+
+Frame 0: independent grayscale reference, decoded MAE=2.094, max error=9
+Frame 1: independent grayscale reference, decoded MAE=4.521, max error=21
+PASS: 24 end-to-end checks
+
+$ ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json projection.mp4
+
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 100,
+            "height": 106,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "3"
+        }
+    ],
+    "format": {
+        "duration": "0.100000"
+    }
+}
+
+$ ffmpeg -v error -i projection.mp4 -f null -
+
+$ ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json demo.mp4
+
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 100,
+            "height": 106,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "90"
+        }
+    ],
+    "format": {
+        "duration": "3.000000"
+    }
+}
+
+$ ffmpeg -v error -i demo.mp4 -f null -
+
+$ ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json datasets/mixed-demo.mp4
+
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 12,
+            "height": 8,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "2"
+        }
+    ],
+    "format": {
+        "duration": "0.066667"
+    }
+}
+
+$ ffmpeg -v error -i datasets/mixed-demo.mp4 -f null -
+
+$ ffmpeg -v error -ss 1.5 -i demo.mp4 -frames:v 1 -vf scale=400:-1 -y output/demo-preview.png
+
+PASS: documentation local link targets exist and code fences are balanced.
+
+Final source verification after formatting:
+$ javac -Xlint:all -d out src\Benchmark.java src\CSVReader.java src\DatasetGenerator.java src\MRIReader.java src\Plane.java src\Point3D.java src\Projection.java src\Volume.java tests\RegressionTests.java
+
+$ java -cp out RegressionTests
+PASS: 1002 checks (loading, transforms, analytic projections, malformed inputs, display)
+
+$ py tests/integration_test.py
+Frame 0: independent grayscale reference, decoded MAE=2.094, max error=9
+Frame 1: independent grayscale reference, decoded MAE=4.521, max error=21
+PASS: 24 end-to-end checks

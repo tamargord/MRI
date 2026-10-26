@@ -1,141 +1,132 @@
 # MRI plane projection
 
-Java implementation of Exercise 1 for Introduction to Software Engineering: extract a two-dimensional image from a three-dimensional MRI volume along a plane defined by three or four points, then combine a sequence of these images into an MP4 video.
+Exercise 1 for Introduction to Software Engineering: sample a bounded plane from a 3D scalar volume and encode a sequence of sections as an MP4. Implemented in Java without third-party Java libraries.
 
-The project focuses on explicit algorithm design, correct sampling, robustness, and projection speed. Here, projection means sampling a planar section of the volume; intensities are not accumulated along a viewing ray.
-
-## Scope and current status
-
-The current demonstration reads `MRHead_1.nrrd`, reads plane coordinates from `planes.csv`, saves a grayscale PNG for each plane, and invokes FFmpeg to create a video. Both triangle and four-point projection methods exist. The supplied example exercises three adjacent four-point planes only.
-
-The implementation currently depends on this MRI's dimensions and spatial metadata. General NRRD support, comprehensive geometry validation, and the assignment's performance requirement remain to be completed and verified. Requirements and acceptance criteria are defined in [SRS.md](SRS.md).
+A projection here is a planar section of the volume, not an intensity sum along a viewing ray. The project includes the implementation, requirements, detailed design, reproducible datasets, regression tests, benchmark, and demonstration videos.
 
 ## Build and run
 
-Prerequisites:
-
-- A Java JDK with `javac` and `java` available. The IntelliJ project is configured for JDK 23.
-- FFmpeg installed at `C:\ffmpeg\bin\ffmpeg.exe`, the path currently embedded in `Projection.createVideo`.
-- The supplied MRI and CSV files in the project directory.
+Requirements: JDK 17 or newer and FFmpeg with the `libx264` encoder on PATH. FFprobe and Python 3 are additionally needed for the end-to-end tests. Validation used OpenJDK 22.0.2 on Windows 11.
 
 From PowerShell in the project directory:
 
 ```powershell
-javac -d out src/Point3D.java src/MRIReader.java src/CSVReader.java src/Projection.java
+javac -Xlint:all -d out src/*.java tests/*.java
 java -cp out Projection MRHead_1.nrrd planes.csv projection.mp4
 ```
 
-In IntelliJ, run the `Projection` main class with program arguments `MRHead_1.nrrd planes.csv projection.mp4` and the project directory as the working directory.
+In IntelliJ, run `Projection` with arguments `MRHead_1.nrrd planes.csv projection.mp4` and the project directory as the working directory. The existing IntelliJ configuration selects JDK 23; select an installed JDK 17 or newer if necessary.
 
-Outputs are `frame_000.png`, `frame_001.png`, and so on in the working directory, plus the requested MP4. The program prints projection timing and benchmarks the first two input planes with 100 warmup iterations followed by 500 measured iterations each. These timing regions exclude MRI loading, PNG saving, and video encoding.
+If FFmpeg is not on PATH, set its executable path explicitly:
 
-FFmpeg uses 30 frames per second, H.264, and `yuv420p`, padding dimensions to even numbers. Existing output video and matching PNG names are overwritten. Use a working directory without PNGs left over from a longer earlier run: the encoder currently consumes the numbered sequence without an explicit frame limit.
-
-## CSV contract
-
-Use a headerless CSV with one plane per nonempty row. Coordinates are floating-point world coordinates in the MRI's **left-posterior-superior (LPS)** coordinate system, rather than voxel indices. A coordinate is ordered `x,y,z`. The code does not convert RAS coordinates to LPS.
-
-| Plane | Values per row | Point order | Geometry |
-| --- | --- | --- | --- |
-| Triangle | 9 | `a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z` | Equal lengths from apex `a` to `b` and `c` |
-| Four-point plane | 12 | `a1.x,a1.y,a1.z,a2.x,a2.y,a2.z,b.x,b.y,b.z,c.x,c.y,c.z` | Equal lengths `a1` to `b` and `a2` to `c`; top edge no longer than bottom edge; coplanar points |
-
-Length equality uses an absolute tolerance of `0.001`. Blank rows are ignored and surrounding numeric whitespace is accepted. The current CLI parses rows directly; the separate `CSVReader` class is not called by `main`.
-
-The supplied CSV contains three four-point planes, in order, at world X values `2.145195`, `0.845200`, and `-0.454795`. They map approximately to voxel-axis Z indices 65, 66, and 67. Here voxel Z refers to the third array axis, which points along negative world X for this dataset.
-
-## Algorithm and design decisions
-
-### Volume coordinates
-
-The NRRD header describes the world position of voxel index vector `v` as `p = origin + D * v`, where the columns of `D` are the three space-direction vectors. For the supplied MRI:
-
-```text
-origin = (86.644897460937486, -133.92860412597656, 116.78569793701172)
-D columns = (0,1,0), (0,0,-1), (-1.2999954223632812,0,0)
+```powershell
+$env:FFMPEG = 'C:\ffmpeg\bin\ffmpeg.exe'
 ```
 
-Inverting that transform gives the current sampling conversion:
+The three positional arguments are input NRRD, input CSV, and output MP4. The output directory must already exist. A successful run replaces the requested output video. Invalid input or encoding failure exits with a nonzero status and an error message; an encoding failure preserves an existing output video.
 
-```text
-voxelX = worldY + 133.92860412597656
-voxelY = 116.78569793701172 - worldZ
-voxelZ = (86.64489746093749 - worldX) / 1.2999954223632812
+For a visible three-second MRI sweep:
+
+```powershell
+java -cp out Projection MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4
 ```
 
-`MRIReader` skips the text header, decompresses an attached gzip payload, and reads little-endian two-byte values into `M[x][y][z]`, with the first axis varying fastest in the input. Dimensions and the transform are currently constants; the reader does not parse these metadata fields.
+Outputs provided in the repository:
 
-### Plane rasterization
+- [projection.mp4](projection.mp4): the supplied three-plane example, 3 frames, 0.1 seconds.
+- [demo.mp4](demo.mp4): 90 adjacent MRI sections, 3 seconds.
+- [mixed-demo.mp4](datasets/mixed-demo.mp4): synthetic triangle and four-point sections with different image sizes, demonstrating a common video canvas.
 
-1. Compute equal side length `L` and bottom edge length `B`. Allocate a zero-filled image with `height = ceil(L)` and `width = ceil(B)`. Java stores this as `E[row][column]`, or `E[y][x]`.
-2. Normalize the two vectors along the side edges. For a triangle, both edges start at `a`; for a four-point plane, they start at `a1` and `a2`.
-3. Move the two endpoints one world-distance unit down their edges for each output row. Sampling starts after the first step, as in the assignment pseudocode. The four-point method clamps the final step to the edge length. The triangle method currently advances by whole steps without this clamp.
-4. For the current endpoints `left` and `right`, calculate span `s = distance(left,right)` and a unit vector across the row. If `s < 1e-7`, sample a single central output pixel.
-5. For integer `k` from 0 through `round(s)`, sample the world position `left + k * unitAcross`. Center its output column using `round(B/2 - s/2 + k)`; ignore columns outside the allocated image.
-6. Transform each world position into voxel coordinates and round each component with Java `Math.round` for nearest-neighbor sampling. An index outside the volume contributes zero; other values are read as `M[x][y][z] & 0xFFFF`.
-7. Return the raw intensity image. For PNG export, find its maximum and map intensities to `round(value * 255 / maximum)`. A zero maximum produces a black image.
+## Scope and input contract
 
-World-distance units follow the source metadata. Output spacing is a project choice of one world-distance unit along each traversal direction. The vertical dimension follows the side length, rather than perpendicular trapezoid height. The explicit rounding policy resolves an ambiguity in the assignment: its inner-loop condition uses `k <= s`, whereas the current implementation uses `k <= round(s)`. These differ for some fractional spans and need a dedicated boundary test before final acceptance.
+The supported NRRD subset is an attached, scalar 3D volume with dimensions in `1..1023`, raw/gzip/ASCII encoding, and signed or unsigned 8-, 16-, or 32-bit integer samples. Both byte orders and LF/CRLF headers are supported. Floating-point samples, detached payloads, nonspatial axes, nonzero data skips, and other encodings are explicitly rejected. See [dataset definitions](datasets/README.md) and the [NRRD format specification](https://teem.sourceforge.net/nrrd/format.html).
 
-For an output of `H` rows and `W` columns, projection time is bounded by `O(H * W)` for the intended geometry and output memory is `O(H * W)`. The loaded volume occupies `O(sx * sy * sz)` storage, with additional Java nested-array overhead. Only one raw projection is retained at a time; all PNGs remain on disk.
+CSV files are headerless. Each nonempty row contains finite world coordinates, in the coordinate convention of the input NRRD. The supplied MRI uses left-posterior-superior (LPS); there is no automatic LPS/RAS conversion.
 
-### Responsibilities
+| Region | Field count | Point order |
+| --- | --- | --- |
+| Isosceles triangle | 9 | `a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z` |
+| Four-point section | 12 | `a1.x,a1.y,a1.z,a2.x,a2.y,a2.z,b.x,b.y,b.z,c.x,c.y,c.z` |
 
-| Class | Current responsibility |
+Blank rows are ignored. Numeric whitespace is accepted. Invalid rows report their line number. A header row, empty coordinate, trailing comma, NaN, or infinity is an error.
+
+Equal side lengths must differ by less than `0.001`. A four-point section also requires top length no greater than bottom length and coplanarity within `0.001` world units. Degenerate planes and crossing traversing sides are rejected. A repeated top point is accepted as the corresponding triangle. As in the assignment's explicit rules, parallel bases are not an additional requirement; simple coplanar sections satisfying the stated constraints use the same traversal.
+
+## Detailed algorithm
+
+### Loading and coordinates
+
+`MRIReader` parses dimensions, scalar representation, encoding, endian, origin, and direction vectors. NRRD stores the first axis fastest. `Volume` therefore uses a flat buffer indexed as `x + sx * (y + sy * z)` and retains samples in byte, short, or int storage. Unsigned values are widened at sampling time; raw projection values use Java `long` so `4294967295` is preserved. Signed samples retain their signed values.
+
+The metadata transform is `world = origin + D * voxel`, where the columns of `D` are the space-direction vectors. Its inverse is computed once using cross products and the determinant. It supports anisotropic, rotated, and nonorthogonal spatial axes. Singular or ill-conditioned transforms are rejected. If spatial fields are absent, the explicit project convention is zero origin and identity directions; `spacings`, when supplied without directions, scales the identity axes. CSV coordinates use that resulting coordinate system.
+
+The scalar and spatial metadata are never replaced with constants from the sample MRI.
+
+### Sampling a bounded plane
+
+1. Validate the three or four points. A triangle is represented internally as a four-point section with coincident top endpoints.
+2. Let `L` be the distance from the first top endpoint to `b`, and `B` the bottom-edge length. Allocate `ceil(L)` rows by `ceil(B)` columns, initially zero. Storage is `E[y][x]`.
+3. Normalize both traversing edge vectors independently. At row `y`, move each top endpoint by `min(y+1, itsEdgeLength)` along its edge. The first row follows the first unit step, matching the assignment's traversal order. Clamping the final row is a deliberate endpoint policy for fractional lengths.
+4. Let the current row endpoints be `left` and `right`, with span `s`. For nonzero spans, compute the unit direction across the row. Convert the left endpoint and across-row direction into voxel coordinates once per row.
+5. For integer `k` from zero through `floor(s + 1e-9)`, sample `left + k * unitAcross`. The small tolerance repairs floating-point error at integer endpoints. This follows the assignment's `k <= span` rule rather than rounding a fractional span upward.
+6. Center the destination column as `round((B-s)/2 + k)`, skipping columns outside the allocated image. A collapsed span samples one central pixel.
+7. Use Java `Math.round` independently on each continuous voxel component. Out-of-range rounded indices contribute zero. Other samples retain their full signed or unsigned numeric value.
+
+One traversal unit means one world-distance unit from the input transform. Image height follows the side length specified by the assignment, rather than the perpendicular height of a trapezoid. Nearest-neighbor ties follow Java rounding, toward positive infinity.
+
+The hot sampling loop uses scalar arithmetic without allocating a point per pixel. Projection time is `O(H*W)` for valid sections and output storage is `O(H*W)`. Volume storage is `O(sx*sy*sz)` at the source scalar width. A 16-million-pixel limit bounds individual images and the common video canvas; available heap still limits volume sizes.
+
+### Display and video
+
+Raw intensities are separate from display values. Grayscale export clamps negative signed values to black and maps nonnegative values using `round(value * 255 / imageMaximum)`. An all-zero or all-negative image is black. Each image has its own display scale, so adjacent images can change brightness.
+
+All frames use the maximum projection width and height, rounded upward to even dimensions. Smaller images are centered on a black canvas. The encoder uses H.264 at CRF 18, `yuv420p`, and 30 playback FPS. H.264 is lossy; exact intensity comparisons belong to raw images, not compressed video.
+
+Each run uses a unique temporary PNG directory and an explicit frame count. Temporary images are removed after the run. Encoding first writes a temporary MP4 beside the requested destination; only successful, nonempty encoded output replaces it. The historical root `frame_*.png` and `projection.png` assets predate the completed implementation and are retained as earlier sample images; the CLI does not read them.
+
+## Design responsibilities
+
+| Class | Responsibility |
 | --- | --- |
-| `Point3D` | Coordinate and vector components |
-| `MRIReader` | Load the supplied gzip-compressed MRI payload |
-| `Projection` | Geometry, coordinate conversion, sampling, grayscale export, timing, CLI orchestration, and FFmpeg invocation |
-| `CSVReader` | Separate CSV-to-points reader, currently unused by the CLI |
+| `Point3D` | Immutable finite coordinate and vector operations |
+| `Volume` | Scalar storage, spatial transform, nearest-neighbor access |
+| `MRIReader` | NRRD parsing, validation, decompression, and scalar decoding |
+| `Plane` | Geometry validation and output dimensions |
+| `CSVReader` | Ordered CSV parsing and row-specific errors |
+| `Projection` | Rasterization, grayscale rendering, CLI orchestration, video encoding |
+| `DatasetGenerator` | Reproducible synthetic fixtures and benchmark volume |
+| `Benchmark` | Warmed projection-only performance experiment |
 
-## Dataset
+The requirements and their verification are recorded in [SRS.md](SRS.md).
 
-| Asset | Description and role |
-| --- | --- |
-| `MRHead_1.nrrd` | Local MRI sample: 256 x 256 x 130, signed 16-bit `short`, little endian, attached gzip payload, LPS coordinates; observed voxel range 0 to 279 |
-| `planes.csv` | Three adjacent four-point sections; current demonstration input |
-| `frame_000.png` through `frame_002.png` | Existing 100 x 105 grayscale projection images |
-| `projection.mp4` | Existing three-frame, 100 x 106 video; one added padding row for even dimensions |
+## Testing strategy and execution
 
-The assignment points to 3D Slicer sample data. The precise download provenance and redistribution terms for the local MRI have not been recorded here and should be established before redistributing it.
+Use analytic synthetic voxel values to establish exact expected samples before evaluating MRI appearance. Exercise transforms separately from geometry; then verify the full CLI by decoding its output video. Test malformed files and failures as well as successful paths.
 
-Expand the validation dataset with small synthetic volumes whose voxel values encode their indices, an all-zero volume, a second NRRD with different dimensions and spacing, and a synthetic 500 x 500 x 500 8-bit volume for the required benchmark. These additional datasets have not yet been added. General metadata and 8-bit loading support are prerequisites for the larger benchmark through the CLI.
+```powershell
+javac -Xlint:all -d out src/*.java tests/*.java
+java -cp out RegressionTests
+py tests/integration_test.py
+```
 
-## Testing strategy
+On systems without the Windows Python launcher, use `python3 tests/integration_test.py`.
 
-| Area | Cases and expected evidence |
-| --- | --- |
-| MRI loading | Known voxel values and axis order; gzip truncation; missing header terminator; changed dimensions, byte order, type, origin, and directions |
-| Coordinates | Voxel-to-world round trips; asymmetric synthetic data to detect flipped axes; nearest-neighbor tie cases; known axis-aligned and rotated sections |
-| Geometry | Valid triangles and four-point sections; zero-length sides; collinear points; unequal legs; noncoplanar points; top edge longer than bottom edge; nonfinite coordinates |
-| Rasterization | Integer and fractional lengths; final-row stepping; row centering; fractional span rounding; samples outside the volume; a fully external plane produces black |
-| Intensities | All-zero image; known nonzero maximum; values above 32767 for unsigned input; explicit handling of signed source data |
-| CLI/video | Missing arguments; invalid CSV; trailing empty fields; empty CSV; missing FFmpeg; encoder failure; one decoded frame per nonempty row in order; mixed image sizes; stale PNGs from an earlier run |
-| Performance | Warmed repeated projection on the required volume with recorded machine, JVM, output dimensions, plane geometry, and timing boundaries |
+The Java suite passes **1002 checks**, covering scalar limits for every supported signed/unsigned width across raw/gzip/ASCII and both byte orders; first-axis ordering; CRLF; spatial transforms including anisotropy and shear; exact rectangle, triangle, and oblique samples; fractional lengths; nearest-neighbor ties; zero fill; zero/negative/high-range display; invalid geometry; invalid CSV; and malformed or truncated NRRD inputs.
 
-For independent sampling checks, derive the affine transform from the NRRD header rather than copying the hardcoded conversion. Compare grayscale PNG pixels exactly under the declared rounding and normalization rules. H.264 is lossy, so decoded MP4 intensities should not be required to match PNG intensities exactly. Check video frame count, ordering, dimensions, and duration separately. A visual comparison in 3D Slicer remains useful with matching plane position, coordinate convention, orientation, and display window.
+The integration suite passes **24 checks**. It compares decoded video frames against an independent Python world-space reference with a tolerance for H.264 compression, checks frame count/order/common canvas, excludes stale PNGs, replaces a longer video with a shorter run, handles missing or misconfigured encoders, preserves existing output on failure, validates argument count, and checks CSV error location. Every check must pass; tests fail with nonzero exit status.
 
-## Current experiment results
+## Performance and experiment
 
-On 2026-10-26, all three existing PNGs were compared with an independent calculation from the decompressed source volume. The reference derived the affine transform from the MRI header and interpolated row endpoints in voxel coordinates. It used the current implementation's sampling, span rounding, and grayscale policies.
+```powershell
+java -Xms256m -Xmx1g -cp out Benchmark
+```
 
-| Frame | Approximate voxel Z | Dimensions | Differing grayscale pixels | Maximum sampled raw intensity |
-| --- | --- | --- | --- | --- |
-| 0 | 65 | 100 x 105 | 0 / 10,500 | 154 |
-| 1 | 66 | 100 x 105 | 0 / 10,500 | 151 |
-| 2 | 67 | 100 x 105 | 0 / 10,500 | 156 |
+This generates a gzip-compressed `500 x 500 x 500` unsigned-byte NRRD under ignored `output/` if needed, loads it before timing, warms each plane for 150 iterations, and measures five batches of 300 projections each. An existing benchmark NRRD can be passed as the only argument.
 
-The [existing MP4 output](projection.mp4) was inspected with FFprobe: 3 frames, 30 FPS, 100 x 106 pixels, and 0.1 seconds duration. The frame count matches the three input planes. Pixel equality was checked on the PNGs, rather than on decoded video frames. 3D Slicer was not found in the checked installation locations, so a Slicer comparison was not performed.
+Measured mean throughput on the test machine was **540 FPS** for a 500 x 500 rectangle, **782 FPS** for a 500 x 472 triangle, and **386 FPS** for a 500 x 500 oblique section. The slowest batch was **361 FPS**. All cases exceeded both the assignment's mandatory 30 FPS and expected 100 FPS. These results describe this machine and workload, not a guarantee for all machines or plane sizes.
 
-This result validates the supplied axis-aligned four-point example under the stated policies. It does not establish triangle correctness, arbitrary-plane correctness, general file support, or performance compliance. No measured benchmark results are recorded yet. Video playback at 30 FPS is independent of projection throughput.
+See [EXPERIMENT.md](EXPERIMENT.md) for hardware, methodology, timing boundaries, variation, video inspection, and limitations. Raw measurements are included in [the benchmark log](experiments/benchmark-2026-10-26.txt). Video playback FPS is independent of projection throughput.
 
-For the performance experiment, exclude loading, warm up the JVM, measure repeated projections with an observable checksum, and report average milliseconds and `FPS = 1000 / averageMilliseconds`. Record at least the volume type and size, plane/output dimensions, CPU, RAM, OS, JVM version, warmup count, measured iteration count, and repeated-run variation. The assignment requires more than 30 projection FPS and expects at least 100 FPS on a 500-cubed byte volume. Report complete pipeline timing separately if measured.
+## Repository workflow
 
-## Remaining work
-
-1. Resolve edge sampling and rounding decisions against the assignment and test triangles and rotated planes.
-2. Parse NRRD metadata and define supported scalar types; remove dataset-specific dimensions and coordinate constants.
-3. Validate finite coordinates, degenerate geometry, argument count, and CSV fields with clear errors.
-4. Make FFmpeg configuration portable, isolate generated frames, and define a common video frame size for varying planes.
-5. Add the planned datasets, run the testing strategy, and record the required performance experiment.
-6. Record dataset provenance and commit completed project work regularly.
+Work is hosted at [tamargord/MRI](https://github.com/tamargord/MRI). Commit and push each coherent, checked change; keep requirements and recorded results consistent with the implementation. Generated large benchmark volumes, compiled classes, and temporary output stay out of version control.

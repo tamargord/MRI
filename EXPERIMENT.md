@@ -84,3 +84,17 @@ For each batch, `FPS = 300 * 1000 / totalMilliseconds`. The mean in the table is
 Every measured batch passed the assignment's 30 FPS minimum and 100 FPS target on this computer. The slowest batch was 361.359 FPS. The triangle samples a smaller region than the rectangle. The reason for the variation between batches was not measured.
 
 These numbers apply to the listed computer, volume, and planes. They do not measure video encoding speed. The tests cover the cases described above, and the supported file formats and memory limits are listed in [SRS.md](SRS.md).
+
+## Java 17 compatibility check
+
+On 2026-10-27, the project was also checked with Temurin JDK 17.0.20.1+1 on the same Windows computer. The downloaded JDK archive was checked against the SHA-256 from Adoptium. It was kept in the ignored output folder without changing the system Java installation.
+
+```powershell
+javac --release 17 -Xlint:all -d out src/*.java tests/*.java
+java -cp out RegressionTests
+py tests/integration_test.py
+```
+
+These commands used the Java 17 bin directory first on PATH, including the Java processes started by the Python test. Compilation finished without warnings, all 1002 Java assertions and 24 video/CLI checks passed, and the supplied MRI demo produced a three-frame 100 x 106 video that decoded without errors.
+
+The [Java 17 verification log](experiments/java17-verification-2026-10-27.txt) records the version, commands, and results. The performance measurements above were made on Java 22; the benchmark was not repeated on Java 17.

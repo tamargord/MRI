@@ -53,7 +53,7 @@ Missing spatial metadata uses zero origin and identity directions, scaled by `sp
 
 Detached NRRD data, nonzero byte/line skips, nonspatial axes, floating-point values, and unsupported encodings are rejected. Singular spatial transforms are also rejected. The code does not automatically convert LPS coordinates to RAS.
 
-The project needs JDK 17+ and FFmpeg, found through PATH or the `FFMPEG` environment variable. Tests were run on Windows 11 with Java 22; other systems have not been tested.
+The project needs JDK 17+ and FFmpeg, found through PATH or the `FFMPEG` environment variable. Tests were run on Windows 11 with Java 17 and Java 22; other operating systems have not been tested.
 
 ## Checking the requirements
 

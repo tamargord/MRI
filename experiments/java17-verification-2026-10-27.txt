@@ -1,0 +1,55 @@
+Java 17 compatibility check, 2026-10-27 (Asia/Jerusalem)
+
+JDK: jdk-17.0.20.1+1
+
+Download: https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_windows_hotspot_17.0.20.1_1.zip
+
+Archive SHA-256 (verified): e53a79c3c3d86865bd7e787903884331068e71321714ffd44f145785affc7cb0
+
+PATH prepended with the portable JDK bin directory for every command, including Java subprocesses in the Python tests.
+
+$ C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java17\jdk-17.0.20.1+1\bin\java.exe -version
+openjdk version "17.0.20.1" 2026-08-18
+OpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)
+OpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)
+Exit status: 0
+
+$ C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java17\jdk-17.0.20.1+1\bin\javac.exe --release 17 -Xlint:all -d out src\Benchmark.java src\CSVReader.java src\DatasetGenerator.java src\MRIReader.java src\Plane.java src\Point3D.java src\Projection.java src\Volume.java tests\RegressionTests.java
+Exit status: 0
+
+$ C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java17\jdk-17.0.20.1+1\bin\java.exe -cp out RegressionTests
+PASS: 1002 checks (loading, transforms, analytic projections, malformed inputs, display)
+Exit status: 0
+
+$ py tests/integration_test.py
+Frame 0: independent grayscale reference, decoded MAE=2.094, max error=9
+Frame 1: independent grayscale reference, decoded MAE=4.521, max error=21
+PASS: 24 end-to-end checks
+Exit status: 0
+
+$ C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java17\jdk-17.0.20.1+1\bin\java.exe -cp out Projection MRHead_1.nrrd planes.csv output/java17/mri-demo.mp4
+Created C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java17\mri-demo.mp4: 3 frames, 100x106, 30 playback FPS
+Projection-only total: 4.827 ms (unwarmed demo timing; use Benchmark for throughput)
+Exit status: 0
+
+$ ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate -of json output/java17/mri-demo.mp4
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 100,
+            "height": 106,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "3"
+        }
+    ]
+}
+Exit status: 0
+
+$ ffmpeg -v error -i output/java17/mri-demo.mp4 -f null -
+Exit status: 0

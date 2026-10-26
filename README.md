@@ -6,10 +6,10 @@ The program is written in Java. It reads a 3D MRI file, creates 2D images of the
 
 ## How to run
 
-You need Java 17 or newer and FFmpeg installed. Run these commands from the project folder:
+You need Java 17 or newer and FFmpeg installed. The project has been tested on Java 17. Run these commands from the project folder:
 
 ```powershell
-javac -d out src/*.java
+javac --release 17 -d out src/*.java
 java -cp out Projection MRHead_1.nrrd planes.csv projection.mp4
 ```
 

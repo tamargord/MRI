@@ -1,14 +1,14 @@
 # MRI plane projection
 
-Exercise 1 for Introduction to Software Engineering.
+This is my project for Exercise 1
 
 The program reads a 3D MRI from an NRRD file and takes 2D sections through it. A CSV file gives the points for each section. Each row becomes one frame in the output MP4.
 
 It is written in Java and handles both plane shapes from the assignment: an isosceles triangle and a four-point section.
 
-## Running the program
+## How to run
 
-You need JDK 17 or newer and FFmpeg on PATH. From the project folder, run:
+Open a terminal in the project folder and run:
 
 ```powershell
 javac -d out src/*.java tests/*.java

@@ -1,51 +1,82 @@
 # Projection algorithm
 
-This document explains the algorithm and the main design choices for Exercise 1.
+## Reading the volume
 
-## Detailed algorithm
+`MRIReader` reads the NRRD header and then decodes the data. NRRD stores the first axis fastest, so `Volume` stores a voxel at:
 
-### Loading and coordinates
+```text
+index = x + sx * (y + sy * z)
+```
 
-`MRIReader` parses dimensions, scalar representation, encoding, endian, origin, and direction vectors. NRRD stores the first axis fastest. `Volume` therefore uses a flat buffer indexed as `x + sx * (y + sy * z)` and retains samples in byte, short, or int storage. Unsigned values are widened at sampling time; raw projection values use Java `long` so `4294967295` is preserved. Signed samples retain their signed values.
+The buffer uses `byte`, `short`, or `int`, depending on the input type. Sample values are returned as `long`, which can hold the full unsigned 32-bit range, including `4294967295`. Signed input keeps its signed values.
 
-The metadata transform is `world = origin + D * voxel`, where the columns of `D` are the space-direction vectors. Its inverse is computed once using cross products and the determinant. It supports anisotropic, rotated, and nonorthogonal spatial axes. Singular or ill-conditioned transforms are rejected. If spatial fields are absent, the explicit project convention is zero origin and identity directions; `spacings`, when supplied without directions, scales the identity axes. CSV coordinates use that resulting coordinate system.
+## World coordinates and voxel indices
 
-The scalar and spatial metadata are never replaced with constants from the sample MRI.
+The CSV points use the coordinate system in the NRRD header. The relationship is:
 
-### Sampling a bounded plane
+```text
+world = origin + D * voxel
+voxel = inverse(D) * (world - origin)
+```
 
-1. Validate the three or four points. A triangle is represented internally as a four-point section with coincident top endpoints.
-2. Let `L` be the distance from the first top endpoint to `b`, and `B` the bottom-edge length. Allocate `ceil(L)` rows by `ceil(B)` columns, initially zero. Storage is `E[y][x]`.
-3. Normalize both traversing edge vectors independently. At row `y`, move each top endpoint by `min(y+1, itsEdgeLength)` along its edge. The first row follows the first unit step, matching the assignment's traversal order. Clamping the final row is a deliberate endpoint policy for fractional lengths.
-4. Let the current row endpoints be `left` and `right`, with span `s`. For nonzero spans, compute the unit direction across the row. Convert the left endpoint and across-row direction into voxel coordinates once per row.
-5. For integer `k` from zero through `floor(s + 1e-9)`, sample `left + k * unitAcross`. The small tolerance repairs floating-point error at integer endpoints. This follows the assignment's `k <= span` rule rather than rounding a fractional span upward.
-6. Center the destination column as `round((B-s)/2 + k)`, skipping columns outside the allocated image. A collapsed span samples one central pixel.
-7. Use Java `Math.round` independently on each continuous voxel component. Out-of-range rounded indices contribute zero. Other samples retain their full signed or unsigned numeric value.
+The columns of `D` are the header's three space-direction vectors. `Volume` calculates the inverse once, using cross products and the determinant. This handles rotated axes, different spacing along each axis, and nonorthogonal axes. A singular or nearly singular transform is rejected.
 
-One traversal unit means one world-distance unit from the input transform. Image height follows the side length specified by the assignment, rather than the perpendicular height of a trapezoid. Nearest-neighbor ties follow Java rounding, toward positive infinity.
+If the header has no origin, the program uses `(0,0,0)`. If it has no directions, it uses the three unit axes, scaled by `spacings` when present. CSV points must use this same coordinate system. There is no automatic conversion between LPS and RAS.
 
-The hot sampling loop uses scalar arithmetic without allocating a point per pixel. Projection time is `O(H*W)` for valid sections and output storage is `O(H*W)`. Volume storage is `O(sx*sy*sz)` at the source scalar width. A 16-million-pixel limit bounds individual images and the common video canvas; available heap still limits volume sizes.
+## Checking the points
 
-### Display and video
+A triangle has points `a,b,c`, with equal lengths from `a` to `b` and `a` to `c`. Internally it uses the same algorithm as a four-point section, with both top points set to `a`.
 
-Raw intensities are separate from display values. Grayscale export clamps negative signed values to black and maps nonnegative values using `round(value * 255 / imageMaximum)`. An all-zero or all-negative image is black. Each image has its own display scale, so adjacent images can change brightness.
+A four-point section has points `a1,a2,b,c`. The program checks that:
 
-All frames use the maximum projection width and height, rounded upward to even dimensions. Smaller images are centered on a black canvas. The encoder uses H.264 at CRF 18, `yuv420p`, and 30 playback FPS. H.264 is lossy; exact intensity comparisons belong to raw images, not compressed video.
+- `abs(distance(a1,b) - distance(a2,c)) < 0.001`.
+- `distance(a1,a2) <= distance(b,c)`.
+- The points are coplanar within `0.001` world units.
 
-Each run uses a unique temporary PNG directory and an explicit frame count. Temporary images are removed after the run. Encoding first writes a temporary MP4 beside the requested destination; only successful, nonempty encoded output replaces it. The historical root `frame_*.png` and `projection.png` assets predate the completed implementation and are retained as earlier sample images; the CLI does not read them.
+Zero-length sides, collinear points, and crossing side edges are rejected. A repeated top point is allowed. The assignment's explicit four-point rules do not require parallel bases, so the code does not add that restriction.
 
-## Design responsibilities
+## Creating the image
 
-| Class | Responsibility |
+Let `L = distance(a1,b)` and `B = distance(b,c)`. The output has `ceil(L)` rows and `ceil(B)` columns, stored as `E[y][x]`. It starts filled with zeros.
+
+1. Calculate unit vectors along `a1 -> b` and `a2 -> c`.
+2. For row `y`, move each starting point `y+1` world units down its side. Stop at the endpoint if that distance would go past it. This means the first row comes after the first step, following the assignment pseudocode.
+3. Call the two row endpoints `left` and `right`, and their distance `s`. Calculate the unit vector between them.
+4. For each integer `k` from `0` through `floor(s + 1e-9)`, sample the position `left + k * unitAcross`. The tolerance handles floating-point error close to an integer span.
+5. Place the sample at column `round((B-s)/2 + k)`. Ignore columns outside the image. If the span is almost zero, sample one pixel in the middle.
+6. Convert sample positions to voxel coordinates and round each component with Java `Math.round`. Out-of-range indices return zero.
+
+For example, a span of `1.6` gives samples at `k=0` and `k=1`. It does not add a sample at `k=2`. Fractional side lengths use a final clamped row in both the triangle and four-point methods.
+
+The image height follows the side length in the assignment, not the perpendicular height of the shape. One step is one world-distance unit. Java rounding sends half-integer ties toward positive infinity.
+
+To reduce work in the inner loop, the code transforms the row's start and direction into voxel coordinates once per row. It then samples using scalar arithmetic without creating a new point for each pixel.
+
+For an image of height `H` and width `W`, projection time and image storage are `O(H*W)`. The volume takes `O(sx*sy*sz)` storage at its source scalar width. Images and the video canvas are limited to 16 million pixels. The volume must fit in the available Java heap.
+
+## Grayscale and video
+
+Raw images keep their original voxel values. For display, negative values become black. Other values use:
+
+```text
+gray = round(value * 255 / imageMaximum)
+```
+
+An all-zero or all-negative image is black. Each frame is scaled separately, which can cause brightness changes between frames.
+
+The video canvas uses the largest image width and height, rounded up to even numbers for the encoder. Smaller images are centered on black. FFmpeg encodes H.264 at CRF 18, with `yuv420p` pixels and 30 playback FPS.
+
+Each run creates its own temporary PNG folder and passes the exact frame count to FFmpeg. It removes the temporary images afterward. The video is first written to a temporary MP4; a successful, nonempty result replaces the requested output. The older root PNG files are kept as previous examples and are not read by the CLI.
+
+## Classes
+
+| Class | What it does |
 | --- | --- |
-| `Point3D` | Immutable finite coordinate and vector operations |
-| `Volume` | Scalar storage, spatial transform, nearest-neighbor access |
-| `MRIReader` | NRRD parsing, validation, decompression, and scalar decoding |
-| `Plane` | Geometry validation and output dimensions |
-| `CSVReader` | Ordered CSV parsing and row-specific errors |
-| `Projection` | Rasterization, grayscale rendering, CLI orchestration, video encoding |
-| `DatasetGenerator` | Reproducible synthetic fixtures and benchmark volume |
-| `Benchmark` | Warmed projection-only performance experiment |
-
-The requirements and their verification are recorded in [SRS.md](SRS.md).
-
+| `Point3D` | Stores a finite 3D point or vector and provides vector operations. |
+| `Volume` | Stores voxels and converts between world and voxel coordinates. |
+| `MRIReader` | Reads and checks the NRRD header and data. |
+| `Plane` | Checks geometry and calculates image dimensions. |
+| `CSVReader` | Reads the planes in order and reports invalid rows. |
+| `Projection` | Samples the planes, makes grayscale images, and calls FFmpeg. |
+| `DatasetGenerator` | Creates the small test files and the large benchmark volume. |
+| `Benchmark` | Measures repeated projections after warmup. |

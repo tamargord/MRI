@@ -1,34 +1,57 @@
-# Dataset catalog
+# Data files
 
-All small synthetic fixtures are committed and can be regenerated with:
+## MRI sample
+
+`MRHead_1.nrrd` in the project root is the supplied MRI. It has 256 x 256 x 130 signed 16-bit voxels, stored as little-endian gzip data. The observed values range from 0 to 279.
+
+Its coordinate system is LPS, with:
+
+```text
+origin = (86.644897460937486,-133.92860412597656,116.78569793701172)
+directions = (0,1,0) (0,0,-1) (-1.2999954223632812,0,0)
+```
+
+SHA-256: `e9b54e8855e9024f2238e27224702c1dcb49c64407d937499a3cc42fb1114c8b`.
+
+The file was already in the project. Its exact download source has not been checked. The assignment suggests using 3D Slicer data.
+
+## Small test volumes
+
+These generated files have known values, which makes it possible to check the reader and projection results:
+
+| File | Size and format | Values |
+| --- | --- | --- |
+| `coded-u16-rotated.nrrd` | 8 x 7 x 6, unsigned 16-bit, little-endian gzip, CRLF header | `x+10*y+100*z` |
+| `unsigned-u32-big.nrrd` | 2 x 2 x 2, unsigned 32-bit, big-endian raw | `0,1,2147483647,2147483648,4294967295,65536,255,42` |
+| `signed-i16.nrrd` | 2 x 2 x 2, signed 16-bit, ASCII | `-32768,-1,0,1,32767,123,-20,45` |
+| `zero-u8.nrrd` | 4 x 4 x 4, unsigned 8-bit, raw | All zero |
+
+The rotated volume has origin `(10,-20,30)` and directions `(0,2,0) (-1,0,0) (0,0,1.5)`. This checks axis order, rotation, and unequal spacing. The other three files omit spatial fields and use the program's zero-origin, identity-direction convention.
+
+After compiling, regenerate the small files from the project root with:
 
 ```powershell
 java -cp out DatasetGenerator
 ```
 
-| File | Data and purpose |
-| --- | --- |
-| `../MRHead_1.nrrd` | Supplied local MRI, 256 x 256 x 130 signed 16-bit samples, gzip, little endian; observed values 0..279. Origin `(86.644897460937486,-133.92860412597656,116.78569793701172)`; directions `(0,1,0) (0,0,-1) (-1.2999954223632812,0,0)`; LPS coordinates. |
-| `coded-u16-rotated.nrrd` | Generated 8 x 7 x 6 unsigned 16-bit gzip fixture, little endian, CRLF header. Value `x+10*y+100*z`. Origin `(10,-20,30)`; directions `(0,2,0) (-1,0,0) (0,0,1.5)`. Tests axis order, anisotropy, rotation, and coordinate inversion. |
-| `unsigned-u32-big.nrrd` | Generated 2 x 2 x 2 unsigned 32-bit raw big-endian fixture. Ordered values: `0,1,2147483647,2147483648,4294967295,65536,255,42`. Tests the full unsigned range. |
-| `signed-i16.nrrd` | Generated 2 x 2 x 2 signed 16-bit ASCII fixture. Ordered values: `-32768,-1,0,1,32767,123,-20,45`. Tests signed interpretation and ASCII decoding. |
-| `zero-u8.nrrd` | Generated 4 x 4 x 4 all-zero unsigned-byte raw fixture. Tests zero sampling and black display behavior. |
-| `../planes.csv` | Supplied three adjacent four-point MRI sections, approximately voxel-axis Z indices 65, 66, 67. |
-| `mixed-planes.csv` | Generated four-point section followed by a triangle in the rotated fixture's world coordinates. Different output heights test common-canvas video generation and input order. |
-| `mri-sweep.csv` | 90 MRI sections at voxel-axis Z indices 20 through 109. Each row uses world X `86.644897460937486 - 1.2999954223632812*z`; the other coordinates retain the supplied plane shape. |
+The Java tests also generate temporary files for each supported integer width, encoding, and byte order, plus invalid files for error tests.
 
-For absent spatial fields, the project uses zero origin and identity directions. This applies to the scalar-limit and zero fixtures.
+## Plane lists
 
-The supplied MRI SHA-256 is `e9b54e8855e9024f2238e27224702c1dcb49c64407d937499a3cc42fb1114c8b`. It was present in the original project; its exact download provenance has not been independently established. The assignment directs students toward 3D Slicer data. Synthetic fixtures are generated entirely by this project and do not require a download.
+`planes.csv` in the project root contains the original three four-point MRI sections. They are approximately at third-axis voxel indices 65, 66, and 67.
 
-## Performance dataset
+`mixed-planes.csv` contains a four-point section followed by a triangle, using the rotated test volume's world coordinates. They produce different image heights.
 
-`Benchmark` generates `output/benchmark500.nrrd` when run without an argument and that file does not yet exist. It is an attached gzip NRRD with unsigned 8-bit samples, 500 x 500 x 500 dimensions, and values `(x+3*y+7*z) & 255`. The decompressed volume contains exactly 125,000,000 samples/bytes. Origin and directions are omitted, giving the documented identity coordinate convention.
+`mri-sweep.csv` contains 90 sections at third-axis voxel indices 20 through 109. World X is `86.644897460937486 - 1.2999954223632812*z`; the other coordinates use the same shape as the original plane list.
 
-Generation and loading happen before timing. The generated large volume is ignored by Git; its generator and raw benchmark results are committed. To generate it explicitly:
+## Benchmark volume
+
+The benchmark volume has 500 x 500 x 500 unsigned-byte voxels with value `(x+3*y+7*z) & 255`. It contains 125,000,000 bytes after decompression. It uses gzip, zero origin, and identity directions.
+
+`Benchmark` creates `output/benchmark500.nrrd` if it is missing. It can also be generated directly:
 
 ```powershell
 java -cp out DatasetGenerator --benchmark output/benchmark500.nrrd
 ```
 
-The regression suite generates additional temporary fixtures for every signed/unsigned width, each supported encoding, and both byte orders. It also creates malformed/truncated files and removes these temporary fixtures on completion.
+The large generated file is ignored by Git. Its generator and the recorded benchmark results are committed.

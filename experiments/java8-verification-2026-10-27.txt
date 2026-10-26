@@ -1,0 +1,114 @@
+Java 8 check, 2026-10-27 (Asia/Jerusalem)
+
+JDK: jdk8u504-b01
+
+Download: https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u504-b01/OpenJDK8U-jdk_x64_windows_hotspot_8u504b01.zip
+
+Archive SHA-256 (verified): ea43d46ede95b51e44a12c66711706cddc762e0a766c54bccea18954e902b2aa
+
+Java 8 bin directory was first on PATH for all commands, including Python-launched Java subprocesses.
+
+$ C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java8\jdk8u504-b01\bin\java.exe -version
+openjdk version "1.8.0_504"
+OpenJDK Runtime Environment (Temurin)(build 1.8.0_504-b01)
+OpenJDK 64-Bit Server VM (Temurin)(build 25.504-b01, mixed mode)
+Exit status: 0
+
+$ C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java8\jdk8u504-b01\bin\javac.exe -source 1.8 -target 1.8 -Xlint:all -d out src\Benchmark.java src\CSVReader.java src\DatasetGenerator.java src\MRIReader.java src\Plane.java src\Point3D.java src\Projection.java src\Volume.java tests\RegressionTests.java
+Exit status: 0
+
+$ C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java8\jdk8u504-b01\bin\java.exe -cp out RegressionTests
+PASS: 1002 checks (loading, transforms, analytic projections, malformed inputs, display)
+Exit status: 0
+
+$ py tests/integration_test.py
+Frame 0: independent grayscale reference, decoded MAE=2.094, max error=9
+Frame 1: independent grayscale reference, decoded MAE=4.521, max error=21
+PASS: 24 end-to-end checks
+Exit status: 0
+
+$ C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java8\jdk8u504-b01\bin\java.exe -cp out Projection MRHead_1.nrrd planes.csv projection.mp4
+Created C:\Users\2Wsx3Edc\IdeaProjects\MRI\projection.mp4: 3 frames, 100x106, 30 playback FPS
+Projection-only total: 6.242 ms (use Benchmark for warmed timing)
+Exit status: 0
+
+$ C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java8\jdk8u504-b01\bin\java.exe -cp out Projection MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4
+Created C:\Users\2Wsx3Edc\IdeaProjects\MRI\demo.mp4: 90 frames, 100x106, 30 playback FPS
+Projection-only total: 20.884 ms (use Benchmark for warmed timing)
+Exit status: 0
+
+$ C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java8\jdk8u504-b01\bin\java.exe -cp out Projection datasets/coded-u16-rotated.nrrd datasets/mixed-planes.csv datasets/mixed-demo.mp4
+Created C:\Users\2Wsx3Edc\IdeaProjects\MRI\datasets\mixed-demo.mp4: 2 frames, 12x8, 30 playback FPS
+Projection-only total: 1.773 ms (use Benchmark for warmed timing)
+Exit status: 0
+
+PASS: each application/test class has Java 8 bytecode version 52.
+
+$ ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json projection.mp4
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 100,
+            "height": 106,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "3"
+        }
+    ],
+    "format": {
+        "duration": "0.100000"
+    }
+}
+
+PASS: projection.mp4 decodes without errors.
+
+$ ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json demo.mp4
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 100,
+            "height": 106,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "90"
+        }
+    ],
+    "format": {
+        "duration": "3.000000"
+    }
+}
+
+PASS: demo.mp4 decodes without errors.
+
+$ ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json datasets/mixed-demo.mp4
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 12,
+            "height": 8,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "2"
+        }
+    ],
+    "format": {
+        "duration": "0.066667"
+    }
+}
+
+PASS: datasets/mixed-demo.mp4 decodes without errors.

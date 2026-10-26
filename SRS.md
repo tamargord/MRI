@@ -60,7 +60,7 @@ These choices resolve ambiguities in the assignment rather than silently changin
 9. The common video canvas uses maximum section dimensions, rounded up to even numbers, with smaller images centered on black. H.264 CRF 18 and 30 playback FPS are display/export choices.
 10. Supported integer encodings are attached raw, gzip/gz, and ASCII/text/txt. Detached data, nonzero byte/line skips, nonspatial axes, unsupported scalar types, and singular spatial transforms fail explicitly. No universal NRRD compliance is claimed.
 
-The full algorithm and class responsibilities are documented in [README.md](README.md#detailed-algorithm).
+The full algorithm and class responsibilities are documented in [ALGORITHM.md](ALGORITHM.md).
 
 ## Dataset and verification strategy
 
@@ -74,7 +74,7 @@ Execution commands and results are in [EXPERIMENT.md](EXPERIMENT.md); raw logs a
 | --- | --- |
 | Repository, problem definition, and scope | GitHub repository and README |
 | SRS | This specification |
-| Detailed main algorithm | README algorithm and explicit policies |
+| Detailed main algorithm | ALGORITHM.md and explicit policies |
 | Defined NRRD dataset | Dataset catalog, fixtures, and generator |
 | Testing strategy including demo | README, Java regression suite, Python integration suite |
 | Implementation with frequent commits | Java sources and repository history |

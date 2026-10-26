@@ -67,6 +67,34 @@ java -Xms256m -Xmx1g -cp out Benchmark
 
 On the test computer, a 500 x 500 x 500 byte volume gave mean batch speeds of 540 FPS for a rectangle, 782 FPS for a triangle, and 386 FPS for an oblique section. The slowest batch was 361 FPS, above the assignment's 30 FPS minimum and 100 FPS target. Loading and video encoding are outside the timer.
 
+## Q&A
+
+### 1. How is the plane p defined?
+
+The plane is represented by three or four 3D points. Each point has coordinates `(x,y,z)`.
+
+For three points `a,b,c`, the points form an isosceles triangle with `a` as the top vertex:
+
+```text
+abs(dist(a,b) - dist(a,c)) < EPS
+```
+
+`EPS` is `0.001`. The points must not all lie on one straight line, so they define a unique plane.
+
+For four points `a1,a2,b,c`, the conditions are:
+
+- The two side lengths are approximately equal: `abs(dist(a1,b) - dist(a2,c)) < EPS`.
+- The top edge is no longer than the bottom edge: `dist(a1,a2) <= dist(b,c)`.
+- All four points lie on the same plane.
+
+The distance between two points is calculated as:
+
+```text
+dist(u,v) = sqrt((u.x-v.x)^2 + (u.y-v.y)^2 + (u.z-v.z)^2)
+```
+
+These points also bound the part of the plane to sample. The algorithm moves down the two sides and samples the MRI between them to create the 2D image.
+
 ## Documents
 
 - [SRS.md](SRS.md): requirements and limits.

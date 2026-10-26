@@ -1,0 +1,7 @@
+*.nrrd binary
+*.png binary
+*.mp4 binary
+*.pdf binary
+*.java text eol=lf
+*.py text eol=lf
+*.md text eol=lf

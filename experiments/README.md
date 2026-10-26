@@ -2,8 +2,8 @@
 
 Current Java 8 version:
 
-- [java8-verification-2026-10-27.txt](java8-verification-2026-10-27.txt): Java 8 compilation, tests, bytecode version, and video checks.
-- [java8-benchmark-2026-10-27.txt](java8-benchmark-2026-10-27.txt): projection timings on the 500-cubed byte volume using Java 8.
+- [java8-verification-2026-10-27.txt](java8-verification-2026-10-27.txt): commands and output from compiling, testing, and checking the videos on Java 8.
+- [java8-benchmark-2026-10-27.txt](java8-benchmark-2026-10-27.txt): Java 8 timings for the 500 x 500 x 500 byte volume.
 
 Earlier versions:
 

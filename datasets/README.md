@@ -2,7 +2,7 @@
 
 ## MRI sample
 
-`MRHead_1.nrrd` in the project root is the supplied MRI. It has 256 x 256 x 130 signed 16-bit voxels, stored as little-endian gzip data. The observed values range from 0 to 279.
+`MRHead_1.nrrd` in the project root is the supplied MRI. It has 256 x 256 x 130 signed 16-bit voxels, stored as little-endian gzip data. Its voxel values range from 0 to 279.
 
 Its coordinate system is LPS, with:
 
@@ -17,7 +17,7 @@ The file was already in the project. Its exact download source has not been chec
 
 ## Small test volumes
 
-These generated files have known values, which makes it possible to check the reader and projection results:
+These are small files with known values, used to check whether the program reads and samples them correctly:
 
 | File | Size and format | Values |
 | --- | --- | --- |
@@ -26,15 +26,15 @@ These generated files have known values, which makes it possible to check the re
 | `signed-i16.nrrd` | 2 x 2 x 2, signed 16-bit, ASCII | `-32768,-1,0,1,32767,123,-20,45` |
 | `zero-u8.nrrd` | 4 x 4 x 4, unsigned 8-bit, raw | All zero |
 
-The rotated volume has origin `(10,-20,30)` and directions `(0,2,0) (-1,0,0) (0,0,1.5)`. This checks axis order, rotation, and unequal spacing. The other three files omit spatial fields and use the program's zero-origin, identity-direction convention.
+The rotated volume has origin `(10,-20,30)` and directions `(0,2,0) (-1,0,0) (0,0,1.5)`. This checks axis order, rotation, and unequal spacing. The other three files have no origin or direction fields. The program uses origin `(0,0,0)` and the normal x, y, z axes for them.
 
-After compiling, regenerate the small files from the project root with:
+To make these small files again, run this from the project folder after compiling:
 
 ```powershell
 java -cp out DatasetGenerator
 ```
 
-The Java tests also generate temporary files for each supported integer width, encoding, and byte order, plus invalid files for error tests.
+The Java tests also make temporary files for the different data types, file formats, and byte orders. Some files are deliberately invalid to check error handling.
 
 ## Plane lists
 
@@ -54,4 +54,4 @@ The benchmark volume has 500 x 500 x 500 unsigned-byte voxels with value `(x+3*y
 java -cp out DatasetGenerator --benchmark output/benchmark500.nrrd
 ```
 
-The large generated file is ignored by Git. Its generator and the recorded benchmark results are committed.
+The large file stays in `output/` and is not uploaded to GitHub. The code that creates it and the speed-test results are in the repository.

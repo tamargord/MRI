@@ -1,27 +1,21 @@
 # MRI plane projection
 
-This is my project for Exercise 1.
+This is my Java 8 project for Exercise 1. It takes a 3D MRI and creates 2D images from it. The points for each image come from a CSV file. The images are then joined into an MP4 video.
 
-The program is written in Java 8. It reads a 3D MRI file, creates 2D images of the planes given in a CSV file, and puts them into a video. Each CSV row becomes one video frame.
+## Running it
 
-## How to run
-
-You need JDK 8 and FFmpeg installed. Run these commands from the project folder:
+You need JDK 8 and FFmpeg. From the project folder, run:
 
 ```powershell
 javac -d out src/*.java
 java -cp out Projection MRHead_1.nrrd planes.csv projection.mp4
 ```
 
-The three arguments are:
+`MRHead_1.nrrd` is the MRI file, `planes.csv` contains the plane points, and `projection.mp4` is the video to create.
 
-- `MRHead_1.nrrd`: the MRI data.
-- `planes.csv`: the points that define each plane.
-- `projection.mp4`: the output video.
+In IntelliJ, choose JDK 8 and run `Projection` with those three filenames as the program arguments.
 
-In IntelliJ, select JDK 8 as the project SDK. Then run `Projection` with those three filenames as the program arguments.
-
-FFmpeg must be on PATH. If it is installed at `C:\ffmpeg\bin\ffmpeg.exe`, you can set it in PowerShell:
+FFmpeg is used to turn the images into a video. Java creates the images, but it does not have a built-in MP4 encoder. FFmpeg must be on PATH, or you can give its location in PowerShell:
 
 ```powershell
 $env:FFMPEG = 'C:\ffmpeg\bin\ffmpeg.exe'
@@ -29,39 +23,30 @@ $env:FFMPEG = 'C:\ffmpeg\bin\ffmpeg.exe'
 
 ## How it works
 
-The CSV has no header. Each row contains three or four points, with each point written as `x,y,z`. The points use the MRI's world coordinates.
+Each CSV row contains three or four points. A point is written as `x,y,z`, using the MRI's world coordinates. There is no header row.
 
-The program goes through each plane row by row. It takes the value of the nearest MRI voxel and uses it as a pixel in the image. Points outside the MRI get a value of zero. FFmpeg joins the grayscale images into a video.
+The program moves across each plane one row at a time. For every sample, it finds the nearest voxel in the MRI. A voxel is like a pixel in a 3D image. Its value becomes a pixel in the output image. Samples outside the array are zero, which appears black.
 
-The full algorithm is in [ALGORITHM.md](ALGORITHM.md).
+The full steps and formulas are in [ALGORITHM.md](ALGORITHM.md).
 
-## Results
+## Output and tests
 
-[projection.mp4](projection.mp4) has three frames because `planes.csv` has three rows. At 30 FPS, it lasts 0.1 seconds. [demo.mp4](demo.mp4) is a longer example with 90 frames and lasts 3 seconds.
+[projection.mp4](projection.mp4) has three frames, one for each row in `planes.csv`. It lasts 0.1 seconds at 30 FPS. [demo.mp4](demo.mp4) is a longer example with 90 frames.
 
-The tests check known image values, different plane directions, invalid input, and video output. In the speed test on a 500 x 500 x 500 byte volume, the slowest measured batch was about 686 FPS on Java 8. Loading the MRI and making the video were not included in that timing.
+The tests use small arrays where the correct values are known. They also check bad input and the video output. The speed test uses a 500 x 500 x 500 byte volume. Its slowest measured batch was about 686 FPS on the test computer, above the assignment's 100 FPS target. This measures projection only.
 
-Test commands and full results are in [EXPERIMENT.md](EXPERIMENT.md).
+Commands and results are in [EXPERIMENT.md](EXPERIMENT.md).
 
-## Q&A
+## Q&A: How is the plane p defined?
 
-### How is the plane p defined?
+For three points `a,b,c`, the shape is an isosceles triangle: the lengths from `a` to `b` and from `a` to `c` must differ by less than `0.001`. The points cannot all be on one straight line.
 
-A plane is given by three or four 3D points.
+For four points `a1,a2,b,c`:
 
-With three points `a,b,c`, the shape is an isosceles triangle. The distances from `a` to `b` and from `a` to `c` must differ by less than `0.001`. The points must not all be on one straight line.
-
-With four points `a1,a2,b,c`:
-
-- The lengths `a1` to `b` and `a2` to `c` must differ by less than `0.001`.
-- The top edge `a1` to `a2` must be no longer than the bottom edge `b` to `c`.
+- The lengths from `a1` to `b` and from `a2` to `c` must differ by less than `0.001`.
+- The top edge `a1` to `a2` cannot be longer than the bottom edge `b` to `c`.
 - All four points must be on the same plane.
 
-These points define the part of the plane used to create the image.
+## More details
 
-## Other files
-
-- [SRS.md](SRS.md): project requirements.
-- [ALGORITHM.md](ALGORITHM.md): detailed explanation of the algorithm.
-- [datasets/README.md](datasets/README.md): information about the data files.
-- [EXPERIMENT.md](EXPERIMENT.md): tests and performance results.
+[SRS.md](SRS.md) lists the requirements. [datasets/README.md](datasets/README.md) describes the input files.

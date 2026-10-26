@@ -1,84 +1,88 @@
-# Projection algorithm
+# How the projection works
 
-The code uses Java 8. Start with `Point3D`, which is a class with three coordinate fields and basic vector methods. Then read `Plane` for the point checks and `Projection.project` for the row-by-row algorithm.
+The main method to read is `Projection.project`. It creates one image for one plane. `Point3D` stores the coordinates, `Plane` checks the shape, and `Volume` holds the MRI values.
 
-## Reading the volume
+## Reading the MRI
 
-`MRIReader` reads the NRRD header and then decodes the data. NRRD stores the first axis fastest, so `Volume` stores a voxel at:
+`MRIReader` reads the NRRD header first. The header gives the array size, value type, byte order, compression, and coordinate information.
+
+The values are stored in a one-dimensional array. NRRD stores the x values next to each other, so the position of voxel `(x,y,z)` is:
 
 ```text
 index = x + sx * (y + sy * z)
 ```
 
-The volume uses a `byte[]`, `short[]`, or `int[]`, depending on the input type. Only the array for that type is allocated. Sample values are returned as `long`, which can hold the full unsigned 32-bit range, including `4294967295`. Signed input keeps its signed values.
+For example, moving one step in x increases the index by 1. Moving one step in y increases it by `sx`.
 
-## World coordinates and voxel indices
+The program uses a `byte[]`, `short[]`, or `int[]`, depending on the file type. Only one is allocated. A sampled value is returned as `long` so even the largest unsigned 32-bit value, `4294967295`, fits.
 
-The CSV points use the coordinate system in the NRRD header. The relationship is:
+## Converting coordinates
+
+The CSV points are positions in the MRI's coordinate system. They are not array indices. The origin and direction vectors in the header tell the program how to convert them:
 
 ```text
 world = origin + D * voxel
 voxel = inverse(D) * (world - origin)
 ```
 
-The columns of `D` are the header's three space-direction vectors. `Volume` calculates the inverse once, using cross products and the determinant. This handles rotated axes, different spacing along each axis, and nonorthogonal axes. A singular or nearly singular transform is rejected.
+`D` is a 3 x 3 matrix whose columns are the direction vectors. `Volume` calculates its inverse once using cross products and the determinant. This also works when the MRI axes are rotated, have different spacing, or are not at right angles. A matrix with no usable inverse causes an error.
 
-If the header has no origin, the program uses `(0,0,0)`. If it has no directions, it uses the three unit axes, scaled by `spacings` when present. CSV points must use this same coordinate system. There is no automatic conversion between LPS and RAS.
+If the origin is missing, the code uses `(0,0,0)`. Missing directions mean the normal x, y, z axes, scaled by `spacings` if it is given. There is no automatic conversion between LPS and RAS.
 
-## Checking the points
+## Checking the shape
 
-A triangle has points `a,b,c`, with equal lengths from `a` to `b` and `a` to `c`. Internally it uses the same algorithm as a four-point section, with both top points set to `a`.
+For a triangle `a,b,c`, the distances `a` to `b` and `a` to `c` must agree within `0.001`. The code then uses `a` for both top points, so the same loop can handle both shapes.
 
-A four-point section has points `a1,a2,b,c`. The program checks that:
+For four points `a1,a2,b,c`, the checks are:
 
-- `abs(distance(a1,b) - distance(a2,c)) < 0.001`.
-- `distance(a1,a2) <= distance(b,c)`.
-- The points are coplanar within `0.001` world units.
+```text
+abs(distance(a1,b) - distance(a2,c)) < 0.001
+distance(a1,a2) <= distance(b,c)
+```
 
-Zero-length sides, collinear points, and crossing side edges are rejected. A repeated top point is allowed. The assignment's explicit four-point rules do not require parallel bases, so the code does not add that restriction.
+The points must also lie on the same plane within `0.001` world units. Zero-length sides, points on one line, and crossing side edges are rejected. Coincident top points are allowed. Parallel bases are not an extra check because they are not required by the assignment's listed four-point conditions.
 
-## Creating the image
+## Filling the image
 
-Let `L = distance(a1,b)` and `B = distance(b,c)`. The output has `ceil(L)` rows and `ceil(B)` columns, stored as `E[y][x]`. It starts filled with zeros.
+Let `L` be the length from `a1` to `b`, and `B` the bottom length from `b` to `c`. The output starts as a zero-filled array with `ceil(L)` rows and `ceil(B)` columns. It is stored as `image[y][x]`.
 
-1. Calculate unit vectors along `a1 -> b` and `a2 -> c`.
-2. For row `y`, move each starting point `y+1` world units down its side. Stop at the endpoint if that distance would go past it. This means the first row comes after the first step, following the assignment pseudocode.
-3. Call the two row endpoints `left` and `right`, and their distance `s`. Calculate the unit vector between them.
-4. For each integer `k` from `0` through `floor(s + 1e-9)`, sample the position `left + k * unitAcross`. The tolerance handles floating-point error close to an integer span.
-5. Place the sample at column `round((B-s)/2 + k)`. Ignore columns outside the image. If the span is almost zero, sample one pixel in the middle.
-6. Convert sample positions to voxel coordinates and round each component with Java `Math.round`. Out-of-range indices return zero.
+For each row:
 
-For example, a span of `1.6` gives samples at `k=0` and `k=1`. It does not add a sample at `k=2`. Fractional side lengths use a final clamped row in both the triangle and four-point methods.
+1. Move one world unit farther down each side. Stop at an endpoint if the step would go past it. The first row is after the first step, as in the assignment.
+2. Find the current left and right endpoints. Call their distance `span`.
+3. Calculate the unit vector from left to right. Sample at whole-unit distances `k`, from 0 through `floor(span + 1e-9)`.
+4. Center the row by placing each sample at `round((B-span)/2 + k)`. Skip columns outside the image. If the span is almost zero, sample one pixel in the middle.
+5. Convert the sample to voxel coordinates. Round each coordinate with `Math.round`, then read that value from the MRI. A rounded index outside the volume gives zero.
 
-The image height follows the side length in the assignment, not the perpendicular height of the shape. One step is one world-distance unit. Java rounding sends half-integer ties toward positive infinity.
+A span of `1.6` gives samples at 0 and 1. The `1e-9` tolerance is there for floating-point error near a whole number. Half-integer ties use Java rounding, toward positive infinity. Both plane shapes stop at their endpoints on a fractional final row.
 
-To reduce work in the inner loop, the code transforms the row's start and direction into voxel coordinates once per row. It then samples using scalar arithmetic without creating a new point for each pixel.
+The image height follows the side length from the assignment. It is not the perpendicular height of the shape.
 
-For an image of height `H` and width `W`, projection time and image storage are `O(H*W)`. The volume takes `O(sx*sy*sz)` storage at its source scalar width. Images and the video canvas are limited to 16 million pixels. The volume must fit in the available Java heap.
+For speed, the row's starting point and step are converted to voxel coordinates before the inner loop. The loop then uses numbers directly instead of creating a new point object for every pixel.
 
-## Grayscale and video
+For height `H` and width `W`, projection time and output memory are `O(H*W)`. Volume memory is `O(sx*sy*sz)` at the file's value width. The volume must fit in Java memory. Images and video frames are limited to 16 million pixels.
 
-Raw images keep their original voxel values. For display, negative values become black. Other values use:
+## Making the video
+
+The original voxel values stay in the image array. For display, negative values become black. The other values are converted to 0..255 using:
 
 ```text
 gray = round(value * 255 / imageMaximum)
 ```
 
-An all-zero or all-negative image is black. Each frame is scaled separately, which can cause brightness changes between frames.
+An all-zero or all-negative image is black. Every frame uses its own maximum, so brightness can change between frames.
 
-The video canvas uses the largest image width and height, rounded up to even numbers for the encoder. Smaller images are centered on black. FFmpeg encodes H.264 at CRF 18, with `yuv420p` pixels and 30 playback FPS.
+All frames use the largest image width and height, rounded up to even numbers. Smaller images are centered on black. The code saves temporary PNG files and asks FFmpeg to join them into an MP4 at 30 FPS. FFmpeg uses H.264, CRF 18, and `yuv420p`.
 
-Each run creates its own temporary PNG folder and passes the exact frame count to FFmpeg. It removes the temporary images afterward. The video is first written to a temporary MP4; a successful, nonempty result replaces the requested output. The older root PNG files are kept as previous examples and are not read by the CLI.
+Each run uses a new temporary folder and gives FFmpeg the exact number of frames. Afterward, the temporary files are deleted. The old output video is replaced only after encoding succeeds and produces a nonempty file. The root PNG files are old examples and are not used by the program.
 
-## Classes
+## Files
 
-| Class | What it does |
-| --- | --- |
-| `Point3D` | Stores `x`, `y`, and `z` and provides vector operations. |
-| `Volume` | Stores voxels and converts between world and voxel coordinates. |
-| `MRIReader` | Reads and checks the NRRD header and data. |
-| `Plane` | Checks geometry and calculates image dimensions. |
-| `CSVReader` | Reads the planes in order and reports invalid rows. |
-| `Projection` | Samples the planes, makes grayscale images, and calls FFmpeg. |
-| `DatasetGenerator` | Creates the small test files and the large benchmark volume. |
-| `Benchmark` | Measures repeated projections after warmup. |
+- `Point3D.java`: coordinates and vector calculations.
+- `Volume.java`: MRI values and coordinate conversion.
+- `MRIReader.java`: reading the NRRD header and data.
+- `Plane.java`: checking points and calculating image size.
+- `CSVReader.java`: reading the plane list.
+- `Projection.java`: creating images and calling FFmpeg.
+- `DatasetGenerator.java`: creating test data.
+- `Benchmark.java`: measuring projection speed.

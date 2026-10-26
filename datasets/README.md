@@ -13,7 +13,7 @@ directions = (0,1,0) (0,0,-1) (-1.2999954223632812,0,0)
 
 SHA-256: `e9b54e8855e9024f2238e27224702c1dcb49c64407d937499a3cc42fb1114c8b`.
 
-The file was already in the project. Its exact download source has not been checked. The assignment suggests using 3D Slicer data.
+This file matches the [MRI sample linked in the assignment](https://drive.google.com/file/d/1cqqOgSf8k4e14K5CBs-V_EvMmATX1K-J/view?usp=sharing). On 2026-10-27, the linked file was downloaded and its SHA-256 was compared with the local file. Both had the hash shown above.
 
 ## Small test volumes
 

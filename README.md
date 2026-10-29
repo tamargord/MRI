@@ -1,93 +1,108 @@
-# MRI plane projection
+# MRI Plane Projection — Exercise 1
 
-This is my Java 8 project for Exercise 1. It takes a 3D MRI and creates 2D images from it. The points for each image come from a CSV file. The images are then joined into an MP4 video.
+This is my Java 8 solution for Exercise 1. The goal is to take a 3D MRI volume and create 2D images of sections through it. The program reads the MRI from a NRRD file and the points defining each section from a CSV file. It then creates an MP4 video with one frame for each CSV row, in the same order.
 
-## Start here for the presentation
+I split the program into separate classes for reading files, checking the planes, sampling the MRI, and creating the output. This made it easier to test each part with small examples before using the real MRI.
 
-Read [PRESENTATION.md](PRESENTATION.md) for a five-minute walkthrough, a small worked example, and questions to practice.
+## How it works
 
-1. Open `Projection.java` in IntelliJ and select the `Projection` run configuration.
-2. Use Java 8, the project folder as the working directory, and these program arguments:
+An MRI volume is a three-dimensional grid of values. Each cell is called a voxel, similar to a pixel in a 2D image. The program samples these values along a plane to build an image.
 
-   ```text
-   MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4
-   ```
+1. Read the volume dimensions, voxel values, origin, and directions from the NRRD file.
+2. Read each CSV row and check that its points define a valid shape.
+3. Move down the two sides of the shape, building the image one row at a time.
+4. Convert each sample from world coordinates to voxel coordinates and read the nearest voxel. A rounded position outside the volume gives zero.
+5. Convert the image to grayscale and use FFmpeg to join the frames into a video at 30 FPS.
 
-3. Run the program. It should report `90 frames, 100x106, 30 playback FPS`.
-4. Open [demo.mp4](demo.mp4). It lasts three seconds; replay it while explaining the changing MRI sections.
-5. Explain `Projection.project`, then show the tests and speed results below.
-
-The shorter [projection.mp4](projection.mp4) has only three frames and lasts 0.1 seconds, so it can look like a still image.
-
-## Where to find things
-
-| Location | Purpose |
-| --- | --- |
-| [src](src) | Java application, data generator and speed test |
-| [tests](tests) | Correctness and video tests |
-| [datasets](datasets/README.md) | Small test volumes and plane lists |
-| [SRS.md](SRS.md) | What the program must do and its limits |
-| [ALGORITHM.md](ALGORITHM.md) | Detailed explanation of the calculations |
-| [EXPERIMENT.md](EXPERIMENT.md) | Test method, measurements and assignment checklist |
-| [experiments](experiments/README.md) | Saved test and benchmark logs |
-
-The root `frame_*.png` files and `projection.png` are older examples. The current program creates its own temporary frames for each video. `out/` holds compiled classes; `output/` holds local generated files and tools.
+Here, “projection” means the section produced by the assignment's sampling algorithm. Each sample reads one nearest voxel; values are not added along a viewing ray. The formulas, image dimensions, and rounding choices are explained in [ALGORITHM.md](ALGORITHM.md).
 
 ## Running it
 
-You need JDK 8 and FFmpeg. From the project folder, run:
+The program needs **JDK 8** and **FFmpeg**. FFmpeg must be available on `PATH`, or its executable path can be set in the `FFMPEG` environment variable.
+
+From the project folder, compile and run:
 
 ```powershell
 javac -d out src/*.java
-java -cp out Projection MRHead_1.nrrd planes.csv projection.mp4
+java -cp out Projection MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4
 ```
 
-`MRHead_1.nrrd` is the MRI file, `planes.csv` contains the plane points, and `projection.mp4` is the video to create.
+The three arguments are the MRI filename, the CSV filename, and the output MP4 filename. A successful run with this example creates 90 frames at 100 × 106 pixels. The video plays for three seconds at 30 FPS.
 
-In IntelliJ, choose JDK 8 and run `Projection` with those three filenames as the program arguments.
-
-If IntelliJ reports a missing JDK, open **File > Project Structure > Project** and select an installed Java 8 SDK. Use **Add JDK from disk** if it is not listed, and select the JDK folder containing `bin/javac.exe`. The project SDK name is `temurin-1.8`; choose your own installed Java 8 SDK if its name differs. Keep the language level at 8.
-
-In **Run > Edit Configurations**, select `Projection`, set the working directory to the project folder, and set the program arguments to `MRHead_1.nrrd planes.csv projection.mp4`. The numbered temporary configurations may have no arguments.
-
-FFmpeg is used to turn the images into a video. Java creates the images, but it does not have a built-in MP4 encoder. FFmpeg must be on PATH, or you can give its location in PowerShell:
+To set the FFmpeg location in PowerShell, for example:
 
 ```powershell
 $env:FFMPEG = 'C:\ffmpeg\bin\ffmpeg.exe'
 ```
 
-## How it works
+In IntelliJ, select an installed Java 8 SDK and run `Projection` with the project folder as the working directory. Use these program arguments:
 
-Each CSV row contains three or four points. A point is written as `x,y,z`, using the MRI's world coordinates. There is no header row.
+```text
+MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4
+```
 
-The program moves across each plane one row at a time. For every sample, it finds the nearest voxel in the MRI. A voxel is like a pixel in a 3D image. Its value becomes a pixel in the output image. Samples outside the array are zero, which appears black.
+If IntelliJ reports a missing JDK, select your Java 8 installation under **File > Project Structure > Project**. The project SDK is named `temurin-1.8`, but another installed Java 8 SDK can be selected. Keep the language level at 8. FFmpeg must also be available to the IntelliJ process through `PATH` or `FFMPEG`.
 
-The full steps and formulas are in [ALGORITHM.md](ALGORITHM.md).
+## Input format
 
-## Output and tests
+The CSV has no header. Each nonempty row contains either nine numbers for three points or twelve numbers for four points. Each point is written as `x,y,z`, using the MRI's world coordinate system.
 
-[projection.mp4](projection.mp4) has three frames, one for each row in `planes.csv`. It lasts 0.1 seconds at 30 FPS. [demo.mp4](demo.mp4) is a longer example with 90 frames.
+- **Three points, `a,b,c`:** an isosceles triangle. The two sides from `a` must differ in length by less than `0.001`, and the points must not be on one straight line.
+- **Four points, `a1,a2,b,c`:** a section with sides `a1` to `b` and `a2` to `c` equal within the same tolerance. The points must be coplanar, the top edge cannot be longer than the bottom edge, and crossing or zero-length sides are rejected. The two top points may be the same, which also lets the algorithm handle a triangle.
 
-The tests use small arrays where the correct values are known. They also check bad input and the video output. The latest checks passed 1002 Java checks and 24 video/command-line checks.
+Invalid rows are reported with their line number. The supplied [datasets](datasets/README.md) include both plane shapes and small volumes with known values.
 
-The speed test uses a 500 x 500 x 500 byte volume. On 2026-10-29, its slowest measured batch was 711.640 FPS on the test computer, above the assignment's 100 FPS target. This measures projection only; the saved video plays at 30 FPS.
+## Example output
 
-Commands and results are in [EXPERIMENT.md](EXPERIMENT.md).
+| Video | Input plane list | Frames | Duration at 30 FPS |
+| --- | --- | --- | --- |
+| [demo.mp4](demo.mp4) | `datasets/mri-sweep.csv` | 90 | 3 seconds |
+| [projection.mp4](projection.mp4) | `planes.csv` | 3 | 0.1 seconds |
+| [mixed-demo.mp4](datasets/mixed-demo.mp4) | `datasets/mixed-planes.csv` | 2 | About 0.067 seconds |
 
-To demonstrate both supported plane shapes, use `datasets/coded-u16-rotated.nrrd datasets/mixed-planes.csv datasets/mixed-demo.mp4` as the IntelliJ program arguments. That small test produces two frames; use it to explain the input and tests rather than as the main video to watch.
+`demo.mp4` shows a sweep through adjacent sections of the real MRI. The other two videos are very short, so they can look like still images during playback. The mixed example uses `datasets/coded-u16-rotated.nrrd` and contains a four-point section followed by a triangle.
 
-The [assignment review from 2026-10-29](EXPERIMENT.md#assignment-review-2026-10-29) maps the eight deliverables to the project and records the latest test and speed results.
+## Testing and results
 
-## Q&A: How is the plane p defined?
+I used small volumes with known values to check the raw projection results. The tests cover coordinate conversion, rotated axes, both plane shapes, rounding, out-of-bounds samples, and invalid input. A separate Python test checks the running Java program and the encoded video, including frame count, order, image content, and failed runs.
 
-For three points `a,b,c`, the shape is an isosceles triangle: the lengths from `a` to `b` and from `a` to `c` must differ by less than `0.001`. The points cannot all be on one straight line.
+The recorded Java 8 run on **29 October 2026** passed **1002 Java checks** and **24 video/command-line checks**. These are individual checks, including repeated pixel and file-format checks, rather than 1002 separate test cases.
 
-For four points `a1,a2,b,c`:
+To run the checks with JDK 8, Python 3, FFmpeg, and FFprobe available:
 
-- The lengths from `a1` to `b` and from `a2` to `c` must differ by less than `0.001`.
-- The top edge `a1` to `a2` cannot be longer than the bottom edge `b` to `c`.
-- All four points must be on the same plane.
+```powershell
+javac -d out src/*.java tests/*.java
+java -cp out RegressionTests
+py tests/integration_test.py
+```
 
-## More details
+The speed test uses a **500 × 500 × 500 unsigned-byte volume**. After warmup, it measures repeated projections of a rectangle, a triangle, and an oblique section. On the test computer (Windows 11, Ryzen 9 7940HS, about 32 GB RAM), the slowest measured batch on 29 October 2026 was **711.640 projection FPS**, above the assignment's 30 FPS minimum and 100 FPS target.
 
-[SRS.md](SRS.md) lists the requirements. [datasets/README.md](datasets/README.md) describes the input files.
+```powershell
+java -Xms256m -Xmx1g -cp out Benchmark
+```
+
+This measures projection only. File loading, grayscale conversion, PNG saving, and MP4 encoding are excluded. The saved video still plays at 30 FPS. The method, full results, and saved logs are in [EXPERIMENT.md](EXPERIMENT.md).
+
+## Scope and limitations
+
+The reader supports scalar 3D NRRD volumes with signed or unsigned 8-, 16-, or 32-bit integer values, using raw, gzip, or ASCII data stored in the same file as the header. Floating-point volumes and detached data files are not supported. The volume must fit in Java memory, and each projection or video frame is limited to 16 million pixels.
+
+CSV coordinates must use the MRI's coordinate system; the program does not automatically convert between LPS and RAS. Grayscale is scaled separately for each frame, so brightness can change between frames. Negative values remain in the raw image array but appear black in the video.
+
+Correctness was checked using known-value test volumes and video tests. No direct pixel comparison with 3D Slicer was made.
+
+## Project files
+
+| Location | Contents |
+| --- | --- |
+| [src](src) | Java source code, dataset generator, and benchmark |
+| [tests](tests) | Java regression tests and Python video tests |
+| [datasets](datasets/README.md) | Test volumes and plane lists, with descriptions |
+| [SRS.md](SRS.md) | Requirements and supported scope |
+| [ALGORITHM.md](ALGORITHM.md) | Detailed algorithm and implementation choices |
+| [EXPERIMENT.md](EXPERIMENT.md) | Test method, measurements, and assignment review |
+| [experiments](experiments/README.md) | Saved verification and benchmark logs |
+| [PRESENTATION.md](PRESENTATION.md) | Presentation notes and a worked example |
+
+The program creates temporary frame images for each run and removes them afterward. The root `frame_*.png` files and `projection.png` are older examples. Compiled classes go in `out/`, and local generated files go in `output/`.

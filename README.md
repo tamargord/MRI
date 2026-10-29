@@ -76,7 +76,7 @@ java -cp out RegressionTests
 py tests/integration_test.py
 ```
 
-The speed test uses a **500 × 500 × 500 unsigned-byte volume**. After warmup, it measures repeated projections of a rectangle, a triangle, and an oblique section. On the test computer (Windows 11, Ryzen 9 7940HS, about 32 GB RAM), the slowest measured batch on 29 October 2026 was **711.640 projection FPS**, above the assignment's 30 FPS minimum and 100 FPS target.
+The speed test uses a **500 × 500 × 500 unsigned-byte volume**. After warmup, it measures repeated projections of a rectangle, a triangle, and an oblique section. On the test computer (Windows 11, Ryzen 9 7940HS, about 32 GB RAM), the slowest measured batch in the final check on 29 October 2026 was **735.346 projection FPS**, above the assignment's 30 FPS minimum and 100 FPS target.
 
 ```powershell
 java -Xms256m -Xmx1g -cp out Benchmark

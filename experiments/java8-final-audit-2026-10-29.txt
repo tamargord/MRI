@@ -1,0 +1,207 @@
+Final assignment check - 2026-10-29
+Source commit checked: 67bfa9b
+Assignment: I2SE_Exe1.docx.pdf, all three pages inspected.
+
+JDK: Temurin 1.8.0_504-b01 (64-bit)
+Compile: output/java8/jdk8u504-b01/bin/javac.exe -source 1.8 -target 1.8 -Xlint:all -d out src/*.java tests/*.java
+Result: exit 0, no compiler output or warnings.
+Tests: java -cp out RegressionTests; py tests/integration_test.py
+The Java 8 bin directory was first on PATH for the Python integration suite.
+
+PASS: 1002 checks (loading, transforms, analytic projections, malformed inputs, display)
+Frame 0: independent grayscale reference, decoded MAE=2.094, max error=9
+Frame 1: independent grayscale reference, decoded MAE=4.521, max error=21
+PASS: 24 end-to-end checks
+
+Benchmark command: java -Xms256m -Xmx1g -cp out Benchmark
+java=1.8.0_504-b01; vm=OpenJDK 64-Bit Server VM
+os=Windows 11 10.0 amd64
+logical_processors=16; max_heap_bytes=954728448
+volume=500x500x500 uint8; value=(x+3*y+7*z)&255; warmup=150; iterations_per_batch=300; batches=5
+Timed work includes geometry setup, output allocation, sampling, and one observed pixel per projection; excludes loading, rendering and encoding.
+plane,width,height,batch,total_ms,average_ms,fps,checksum
+rectangle,500,500,1,398.823100,1.329410,752.213,37948
+rectangle,500,500,2,391.148800,1.303829,766.972,37948
+rectangle,500,500,3,390.849400,1.302831,767.559,37948
+rectangle,500,500,4,407.971400,1.359905,735.346,37948
+rectangle,500,500,5,386.436200,1.288121,776.325,37948
+SUMMARY rectangle mean_fps=759.683 min_fps=735.346 max_fps=776.325 mandatory_30=PASS expected_100=PASS
+triangle,500,472,1,195.545000,0.651817,1534.174,11909
+triangle,500,472,2,204.903300,0.683011,1464.105,11909
+triangle,500,472,3,199.088200,0.663627,1506.870,11909
+triangle,500,472,4,194.812800,0.649376,1539.940,11909
+triangle,500,472,5,196.339900,0.654466,1527.962,11909
+SUMMARY triangle mean_fps=1514.610 min_fps=1464.105 max_fps=1539.940 mandatory_30=PASS expected_100=PASS
+oblique,500,500,1,376.910800,1.256369,795.944,38240
+oblique,500,500,2,382.061600,1.273539,785.214,38240
+oblique,500,500,3,384.725100,1.282417,779.778,38240
+oblique,500,500,4,383.144500,1.277148,782.994,38240
+oblique,500,500,5,381.837400,1.272791,785.675,38240
+SUMMARY oblique mean_fps=785.921 min_fps=779.778 max_fps=795.944 mandatory_30=PASS expected_100=PASS
+observable_sink=38240
+
+Demo and repository verification:
+COMMAND: C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java8\jdk8u504-b01\bin\java.exe -cp out Projection MRHead_1.nrrd datasets/mri-sweep.csv C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\sweep.mp4
+Created C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\sweep.mp4: 90 frames, 100x106, 30 playback FPS
+Projection-only total: 22.410 ms (use Benchmark for warmed timing)
+
+COMMAND: ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\sweep.mp4
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 100,
+            "height": 106,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "90"
+        }
+    ],
+    "format": {
+        "duration": "3.000000"
+    }
+}
+
+COMMAND: ffmpeg -v error -i C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\sweep.mp4 -f null -
+
+PASS: frame count, dimensions, playback FPS, duration and full decode
+COMMAND: ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json C:\Users\2Wsx3Edc\IdeaProjects\MRI\demo.mp4
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 100,
+            "height": 106,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "90"
+        }
+    ],
+    "format": {
+        "duration": "3.000000"
+    }
+}
+
+COMMAND: ffmpeg -v error -i C:\Users\2Wsx3Edc\IdeaProjects\MRI\demo.mp4 -f null -
+
+PASS: frame count, dimensions, playback FPS, duration and full decode
+COMMAND: C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java8\jdk8u504-b01\bin\java.exe -cp out Projection MRHead_1.nrrd planes.csv C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\original.mp4
+Created C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\original.mp4: 3 frames, 100x106, 30 playback FPS
+Projection-only total: 6.664 ms (use Benchmark for warmed timing)
+
+COMMAND: ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\original.mp4
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 100,
+            "height": 106,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "3"
+        }
+    ],
+    "format": {
+        "duration": "0.100000"
+    }
+}
+
+COMMAND: ffmpeg -v error -i C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\original.mp4 -f null -
+
+PASS: frame count, dimensions, playback FPS, duration and full decode
+COMMAND: ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json C:\Users\2Wsx3Edc\IdeaProjects\MRI\projection.mp4
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 100,
+            "height": 106,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "3"
+        }
+    ],
+    "format": {
+        "duration": "0.100000"
+    }
+}
+
+COMMAND: ffmpeg -v error -i C:\Users\2Wsx3Edc\IdeaProjects\MRI\projection.mp4 -f null -
+
+PASS: frame count, dimensions, playback FPS, duration and full decode
+COMMAND: C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\java8\jdk8u504-b01\bin\java.exe -cp out Projection datasets/coded-u16-rotated.nrrd datasets/mixed-planes.csv C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\mixed.mp4
+Created C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\mixed.mp4: 2 frames, 12x8, 30 playback FPS
+Projection-only total: 1.946 ms (use Benchmark for warmed timing)
+
+COMMAND: ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\mixed.mp4
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 12,
+            "height": 8,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "2"
+        }
+    ],
+    "format": {
+        "duration": "0.066667"
+    }
+}
+
+COMMAND: ffmpeg -v error -i C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\mixed.mp4 -f null -
+
+PASS: frame count, dimensions, playback FPS, duration and full decode
+COMMAND: ffprobe -v error -count_frames -show_entries stream=width,height,nb_read_frames,r_frame_rate:format=duration -of json C:\Users\2Wsx3Edc\IdeaProjects\MRI\datasets\mixed-demo.mp4
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 12,
+            "height": 8,
+            "r_frame_rate": "30/1",
+            "nb_read_frames": "2"
+        }
+    ],
+    "format": {
+        "duration": "0.066667"
+    }
+}
+
+COMMAND: ffmpeg -v error -i C:\Users\2Wsx3Edc\IdeaProjects\MRI\datasets\mixed-demo.mp4 -f null -
+
+PASS: frame count, dimensions, playback FPS, duration and full decode
+COMMAND: ffmpeg -v error -y -i C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\sweep.mp4 -vf select=eq(n\,0)+eq(n\,44)+eq(n\,89),scale=400:424,tile=3x1 -frames:v 1 C:\Users\2Wsx3Edc\IdeaProjects\MRI\output\assignment-check\sweep-preview.png
+
+PASS: MRI SHA-256 matches datasets/README.md: e9b54e8855e9024f2238e27224702c1dcb49c64407d937499a3cc42fb1114c8b
+PASS: documentation file links exist; required deliverables tracked; no compiled classes or output tools tracked
+Visual check: fresh real-MRI frames 0, 44 and 89 each show an MRI section.
+All eight numbered deliverables are present. No required implementation gap found.
+Rounding, endpoint handling and array orientation are documented choices because the
+assignment leaves discretization undefined. No direct 3D Slicer pixel comparison was made.

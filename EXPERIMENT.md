@@ -112,6 +112,24 @@ The [full fresh benchmark log](experiments/java8-benchmark-2026-10-29.txt) conta
 
 A fresh demo was generated with `Projection MRHead_1.nrrd datasets/mri-sweep.csv output/ide-check/teacher-demo.mp4`. FFprobe confirmed 90 frames, 100 x 106 pixels, 30 FPS and 3 seconds. The first, middle and last frames were inspected visually; each contained an MRI section. The existing demo.mp4 has the same frame count, size and playback duration. FFmpeg decoded both existing root videos without errors. The local MRI SHA-256 still matches the value documented in datasets/README.md.
 
+## Final check after code cleanup 2026-10-29
+
+The final review checked source commit `67bfa9b` against all three pages of the assignment PDF. All eight numbered deliverables are present. No required implementation gap was found. The implementation was also checked against the plane conditions in the Q&A and the row-by-row algorithm on page 2, including the documented choices for rounding and image dimensions.
+
+Java 8 compilation with `-source 1.8 -target 1.8 -Xlint:all` completed without warnings. The Java suite passed 1002 checks, and the integration suite passed 24 checks, with the same decoded pixel errors as above.
+
+The benchmark was rerun after the readability changes, using the same volume, planes, warmup, and batch sizes:
+
+| Plane | Mean projection FPS | Slowest batch FPS | 30 FPS minimum / 100 FPS expected |
+| --- | --- | --- | --- |
+| Rectangle | 759.683 | 735.346 | PASS / PASS |
+| Triangle | 1514.610 | 1464.105 | PASS / PASS |
+| Oblique section | 785.921 | 779.778 | PASS / PASS |
+
+Fresh videos were generated from the 90-row MRI sweep, the original three-row MRI list, and the two-row mixed-plane list. Both fresh and submitted videos passed checks for frame count, dimensions, 30 FPS playback, duration, and full decoding. Frames 0, 44, and 89 of the fresh MRI sweep were inspected visually and each showed an MRI section. The MRI hash still matches the dataset documentation. Required files are tracked in Git, documentation file links exist, and compiled classes and local output tools are not tracked.
+
+The [final verification log](experiments/java8-final-audit-2026-10-29.txt) records commands and output. The earlier measurements remain above for comparison. This review does not add a direct pixel comparison with 3D Slicer.
+
 ### Points to explain during the demonstration
 
 - Show demo.mp4 for the real MRI sweep. The default projection.mp4 is only three frames (0.1 seconds), so it can look like a still image.

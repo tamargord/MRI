@@ -2,6 +2,7 @@
 
 Current Java 8 version:
 
+- [java8-final-audit-2026-10-29.txt](java8-final-audit-2026-10-29.txt): final assignment check after the code cleanup, including tests, benchmark, fresh demos, and submitted video checks.
 - [java8-benchmark-2026-10-29.txt](java8-benchmark-2026-10-29.txt): fresh benchmark for the assignment review before the teacher demonstration.
 - [java8-verification-2026-10-27.txt](java8-verification-2026-10-27.txt): commands and output from compiling, testing, and checking the videos on Java 8.
 - [java8-benchmark-2026-10-27.txt](java8-benchmark-2026-10-27.txt): Java 8 timings for the 500 x 500 x 500 byte volume.

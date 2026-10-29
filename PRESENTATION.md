@@ -87,7 +87,7 @@ Open [EXPERIMENT.md](EXPERIMENT.md), then point to the corresponding test code o
 
 - `RegressionTests.java`: 1002 checks, including known voxel values, rotated coordinates, triangles, four-point sections, rounding and invalid inputs. These are individual checks, including repeated pixel checks.
 - `integration_test.py`: 24 checks of the running Java program and encoded video, including frame order, count, content, errors and reruns. Python is used for this extra test; the application is Java.
-- `Benchmark.java`: a 500 x 500 x 500 unsigned-byte volume, 150 warmup projections per plane, then five batches of 300. On 2026-10-29, the slowest batch was 711.640 projection FPS. The assignment requires 30 FPS and expects 100 FPS.
+- `Benchmark.java`: a 500 x 500 x 500 unsigned-byte volume, 150 warmup projections per plane, then five batches of 300. In the final check on 2026-10-29, the slowest batch was 735.346 projection FPS. The assignment requires 30 FPS and expects 100 FPS.
 
 The video plays at 30 FPS. Benchmark FPS measures how quickly the algorithm computes images; loading, PNG creation and MP4 encoding are excluded. Results depend on the computer and the tested planes.
 

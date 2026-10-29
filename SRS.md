@@ -52,3 +52,5 @@ The current version was tested with JDK 8 on Windows 11. FFmpeg is required to m
 The recorded tests passed 1002 Java assertions and 24 video/CLI checks. These are individual checks, including repeated pixel and file-format checks. The slowest speed-test batch was about 686 FPS. No direct comparison in 3D Slicer was made. [EXPERIMENT.md](EXPERIMENT.md) contains the commands and logs, and [datasets/README.md](datasets/README.md) describes the data.
 
 The assignment review on 2026-10-29 reran both suites on Java 8 with the same passing check counts. The fresh benchmark's slowest batch was 711.640 FPS. The original results above remain the 2026-10-27 measurements; the dated review in EXPERIMENT.md records the newer run separately.
+
+The final check after the code readability cleanup on 2026-10-29 again passed both suites with the same counts. Its slowest benchmark batch was 735.346 FPS. Fresh real-MRI and mixed-plane videos, along with the three submitted example videos, passed frame-count, dimensions, playback-rate, duration, and decoding checks. The final results are recorded in [EXPERIMENT.md](EXPERIMENT.md#final-check-after-code-cleanup-2026-10-29).

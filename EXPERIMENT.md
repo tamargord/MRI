@@ -69,7 +69,7 @@ For each group, `FPS = 300 * 1000 / totalMilliseconds`. The average is the mean 
 
 The slowest group was 685.956 FPS. All groups passed the assignment's 30 FPS minimum and 100 FPS target on this computer. These numbers measure projection speed for these inputs, not video encoding speed.
 
-The older Java 17 and Java 22 logs are kept in [experiments](experiments/README.md). They are from earlier versions, so they are not a controlled comparison with this version.
+The older Java 22 logs are kept in [experiments](experiments/README.md). They are from an earlier version, so they are not a controlled comparison with this version.
 
 ## Assignment review 2026-10-29
 

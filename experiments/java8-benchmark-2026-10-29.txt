@@ -1,0 +1,25 @@
+java=1.8.0_504-b01; vm=OpenJDK 64-Bit Server VM
+os=Windows 11 10.0 amd64
+logical_processors=16; max_heap_bytes=954728448
+volume=500x500x500 uint8; value=(x+3*y+7*z)&255; warmup=150; iterations_per_batch=300; batches=5
+Timed work includes geometry setup, output allocation, sampling, and one observed pixel per projection; excludes loading, rendering and encoding.
+plane,width,height,batch,total_ms,average_ms,fps,checksum
+rectangle,500,500,1,397.855600,1.326185,754.042,37948
+rectangle,500,500,2,398.062100,1.326874,753.651,37948
+rectangle,500,500,3,397.214700,1.324049,755.259,37948
+rectangle,500,500,4,421.561400,1.405205,711.640,37948
+rectangle,500,500,5,400.183000,1.333943,749.657,37948
+SUMMARY rectangle mean_fps=744.850 min_fps=711.640 max_fps=755.259 mandatory_30=PASS expected_100=PASS
+triangle,500,472,1,198.186100,0.660620,1513.729,11909
+triangle,500,472,2,196.190700,0.653969,1529.124,11909
+triangle,500,472,3,198.134000,0.660447,1514.127,11909
+triangle,500,472,4,198.052500,0.660175,1514.750,11909
+triangle,500,472,5,201.271700,0.670906,1490.523,11909
+SUMMARY triangle mean_fps=1512.450 min_fps=1490.523 max_fps=1529.124 mandatory_30=PASS expected_100=PASS
+oblique,500,500,1,379.155600,1.263852,791.232,38240
+oblique,500,500,2,379.298000,1.264327,790.935,38240
+oblique,500,500,3,378.709600,1.262365,792.164,38240
+oblique,500,500,4,380.770200,1.269234,787.877,38240
+oblique,500,500,5,381.084900,1.270283,787.226,38240
+SUMMARY oblique mean_fps=789.887 min_fps=787.226 max_fps=792.164 mandatory_30=PASS expected_100=PASS
+observable_sink=38240

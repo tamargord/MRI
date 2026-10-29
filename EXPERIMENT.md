@@ -1,6 +1,6 @@
 # Tests and results
 
-These are the results recorded on 2026-10-27 for the Java 8 version.
+The original results below were recorded on 2026-10-27 for the Java 8 version. The dated assignment review at the end records the follow-up checks on 2026-10-29.
 
 ## Computer used
 
@@ -70,3 +70,52 @@ For each group, `FPS = 300 * 1000 / totalMilliseconds`. The average is the mean 
 The slowest group was 685.956 FPS. All groups passed the assignment's 30 FPS minimum and 100 FPS target on this computer. These numbers measure projection speed for these inputs, not video encoding speed.
 
 The older Java 17 and Java 22 logs are kept in [experiments](experiments/README.md). They are from earlier versions, so they are not a controlled comparison with this version.
+
+## Assignment review 2026-10-29
+
+The three-page `I2SE_Exe1.docx.pdf` was read against the current implementation. No missing required deliverable was found in this review. This is a check against the written assignment, not a guarantee about any additional classroom instructions or grading criteria.
+
+| Assignment item | Evidence in this project | Review result |
+| --- | --- | --- |
+| 1. Repository, problem and scope in README | Git repository, README input/output description and links to design and limits | Present |
+| 2. SRS | SRS.md covers inputs, outputs, geometry, robustness, performance and limits | Present |
+| 3. Detailed algorithm | ALGORITHM.md describes transforms, row traversal, sampling, sizing, rounding and video creation | Present; implementation follows the stated policy |
+| 4. NRRD data set | Supplied MRI plus four small fixtures and a reproducible 500-cubed volume generator; datasets/README.md describes them | Present |
+| 5. Testing strategy including demo | Analytic Java checks plus independent Python video-content/order checks, malformed input and failed-encoder cases | Both suites passed again |
+| 6. Implementation and frequent commits | Separate reader, volume, point, plane, CSV, projection and benchmark classes; existing Git history | Present; Java 8 compilation passed |
+| 7. Three-filename demo with ordered frames | Projection.main takes NRRD, CSV and MP4 filenames; integration checks frame count, content, order and reruns | Passed; fresh real-MRI demo also generated |
+| 8. Experiment, results and MP4 output | This document, dated benchmark logs, projection.mp4, demo.mp4 and datasets/mixed-demo.mp4 | Present; existing MRI videos decoded without errors |
+
+The assignment allows Java, Python, C or C++; its Python invocation is an example of the three-filename interface. This project's corresponding invocation is `java -cp out Projection input.nrrd planes.csv output.mp4`.
+
+Fresh checks used the existing Temurin 8u504-b01 JDK in `output/java8/jdk8u504-b01`, on the same Windows computer as the original experiment:
+
+```powershell
+& ./output/java8/jdk8u504-b01/bin/javac.exe -source 1.8 -target 1.8 -Xlint:all -d out src/*.java tests/*.java
+& ./output/java8/jdk8u504-b01/bin/java.exe -cp out RegressionTests
+$env:PATH = "$PWD/output/java8/jdk8u504-b01/bin;$env:PATH"
+py tests/integration_test.py
+& ./output/java8/jdk8u504-b01/bin/java.exe -Xms256m -Xmx1g -cp out Benchmark
+```
+
+Compilation completed without warnings. Java tests passed 1002 checks; integration tests passed 24 checks. Decoded frame errors were again MAE 2.094 / maximum 9 and MAE 4.521 / maximum 21, within the test tolerances.
+
+| Plane | Mean projection FPS | Slowest batch FPS | 30 FPS minimum / 100 FPS expected |
+| --- | --- | --- | --- |
+| Rectangle | 744.850 | 711.640 | PASS / PASS |
+| Triangle | 1512.450 | 1490.523 | PASS / PASS |
+| Oblique section | 789.887 | 787.226 | PASS / PASS |
+
+The [full fresh benchmark log](experiments/java8-benchmark-2026-10-29.txt) contains all 15 batches. These are projection timings, not MP4 encoding throughput or video playback speed.
+
+A fresh demo was generated with `Projection MRHead_1.nrrd datasets/mri-sweep.csv output/ide-check/teacher-demo.mp4`. FFprobe confirmed 90 frames, 100 x 106 pixels, 30 FPS and 3 seconds. The first, middle and last frames were inspected visually; each contained an MRI section. The existing demo.mp4 has the same frame count, size and playback duration. FFmpeg decoded both existing root videos without errors. The local MRI SHA-256 still matches the value documented in datasets/README.md.
+
+### Points to explain during the demonstration
+
+- Show demo.mp4 for the real MRI sweep. The default projection.mp4 is only three frames (0.1 seconds), so it can look like a still image.
+- Show the mixed-plane input and test to explain support for both three-point triangles and four-point sections. The supplied three-row MRI list contains only four-point sections.
+- The PDF intentionally leaves discretization incomplete. This implementation chooses ceiling dimensions, nearest-voxel rounding, a first row after one step, and endpoint clamping on a fractional final row. It stores the image as `image[y][x]`, whereas the PDF writes `E[x][y]`. Samples whose rounded output column is outside the fixed width are skipped, including the extra right endpoint when the base length is an integer. These choices are documented in ALGORITHM.md.
+- World coordinates are converted using the NRRD origin and direction matrix. CSV coordinates must use that same coordinate system; LPS/RAS conversion is not automatic.
+- Grayscale is scaled separately per frame, so brightness can vary. Full signed/unsigned values remain available in the raw projection array.
+- There has been no direct pixel comparison against 3D Slicer. Correctness evidence comes from analytic fixtures and the independent video reference. Detached, floating-point and nonspatial NRRDs are outside the documented scope; these are not required by the assignment's integer-volume definition.
+- IntelliJ must use the registered Java 8 SDK, the project folder as working directory and all three program arguments. FFmpeg must be available to the IntelliJ process through PATH or FFMPEG.

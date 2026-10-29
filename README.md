@@ -41,6 +41,10 @@ The tests use small arrays where the correct values are known. They also check b
 
 Commands and results are in [EXPERIMENT.md](EXPERIMENT.md).
 
+For a live demonstration, use `MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4` as the IntelliJ program arguments. This produces 90 frames (3 seconds), which is easier to show than the three-frame example. To demonstrate both supported plane shapes, use `datasets/coded-u16-rotated.nrrd datasets/mixed-planes.csv datasets/mixed-demo.mp4`.
+
+The [assignment review from 2026-10-29](EXPERIMENT.md#assignment-review-2026-10-29) maps the eight deliverables to the project and records the latest test and speed results.
+
 ## Q&A: How is the plane p defined?
 
 For three points `a,b,c`, the shape is an isosceles triangle: the lengths from `a` to `b` and from `a` to `c` must differ by less than `0.001`. The points cannot all be on one straight line.

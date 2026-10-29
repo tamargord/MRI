@@ -15,6 +15,10 @@ java -cp out Projection MRHead_1.nrrd planes.csv projection.mp4
 
 In IntelliJ, choose JDK 8 and run `Projection` with those three filenames as the program arguments.
 
+If IntelliJ reports a missing JDK, open **File > Project Structure > Project** and select an installed Java 8 SDK. Use **Add JDK from disk** if it is not listed, and select the JDK folder containing `bin/javac.exe`. The project SDK name is `temurin-1.8`; choose your own installed Java 8 SDK if its name differs. Keep the language level at 8.
+
+In **Run > Edit Configurations**, select `Projection`, set the working directory to the project folder, and set the program arguments to `MRHead_1.nrrd planes.csv projection.mp4`. The numbered temporary configurations may have no arguments.
+
 FFmpeg is used to turn the images into a video. Java creates the images, but it does not have a built-in MP4 encoder. FFmpeg must be on PATH, or you can give its location in PowerShell:
 
 ```powershell

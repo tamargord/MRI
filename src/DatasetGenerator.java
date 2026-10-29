@@ -1,13 +1,16 @@
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.zip.GZIPOutputStream;
 
 /** Reproducible, synthetic assignment data; no external libraries or downloads. */
 public final class DatasetGenerator {
     private DatasetGenerator() {}
 
-    public static void write(
+    public static void writeVolume(
             Path path,
             String type,
             String sizes,
@@ -26,37 +29,44 @@ public final class DatasetGenerator {
                         + "\nencoding: "
                         + encoding
                         + "\n";
-        if (bits > 8 && !encoding.equals("ascii")) header += "endian: " + endian + "\n";
+        if (bits > 8 && !encoding.equals("ascii")) {
+            header += "endian: " + endian + "\n";
+        }
         header += spatial + "\n";
         try (OutputStream file = Files.newOutputStream(path)) {
             file.write(header.replace("\n", newline).getBytes(StandardCharsets.US_ASCII));
             try (OutputStream payload =
                     encoding.equals("gzip") ? new GZIPOutputStream(file) : file) {
                 for (long value : values) {
-                    if (encoding.equals("ascii"))
+                    if (encoding.equals("ascii")) {
                         payload.write((value + "\n").getBytes(StandardCharsets.US_ASCII));
-                    else
-                        for (int i = 0; i < bits / 8; i++)
-                            payload.write(
-                                    (int)
-                                                    (value
-                                                            >>> (8
-                                                                    * (endian.equals("big")
-                                                                            ? bits / 8 - 1 - i
-                                                                            : i)))
-                                            & 255);
+                    } else {
+                        int bytesPerValue = bits / 8;
+                        for (int i = 0; i < bytesPerValue; i++) {
+                            int bytePosition = i;
+                            if (endian.equals("big")) {
+                                bytePosition = bytesPerValue - 1 - i;
+                            }
+                            int currentByte = (int) (value >>> (8 * bytePosition)) & 255;
+                            payload.write(currentByte);
+                        }
+                    }
                 }
             }
         }
     }
 
-    public static void small(Path directory) throws IOException {
+    public static void writeSmallDatasets(Path directory) throws IOException {
         Files.createDirectories(directory);
         long[] coded = new long[8 * 7 * 6];
-        for (int z = 0; z < 6; z++)
-            for (int y = 0; y < 7; y++)
-                for (int x = 0; x < 8; x++) coded[x + 8 * (y + 7 * z)] = x + 10 * y + 100 * z;
-        write(
+        for (int z = 0; z < 6; z++) {
+            for (int y = 0; y < 7; y++) {
+                for (int x = 0; x < 8; x++) {
+                    coded[x + 8 * (y + 7 * z)] = x + 10 * y + 100 * z;
+                }
+            }
+        }
+        writeVolume(
                 directory.resolve("coded-u16-rotated.nrrd"),
                 "uint16",
                 "8 7 6",
@@ -68,7 +78,7 @@ public final class DatasetGenerator {
                 "\r\n",
                 coded,
                 16);
-        write(
+        writeVolume(
                 directory.resolve("unsigned-u32-big.nrrd"),
                 "uint32",
                 "2 2 2",
@@ -78,7 +88,7 @@ public final class DatasetGenerator {
                 "\n",
                 new long[] {0, 1, 2147483647L, 2147483648L, 4294967295L, 65536, 255, 42},
                 32);
-        write(
+        writeVolume(
                 directory.resolve("signed-i16.nrrd"),
                 "int16",
                 "2 2 2",
@@ -88,7 +98,7 @@ public final class DatasetGenerator {
                 "\n",
                 new long[] {-32768, -1, 0, 1, 32767, 123, -20, 45},
                 16);
-        write(
+        writeVolume(
                 directory.resolve("zero-u8.nrrd"),
                 "uint8",
                 "4 4 4",
@@ -104,27 +114,34 @@ public final class DatasetGenerator {
     }
 
     public static void writeBenchmark(Path path) throws IOException {
-        if (path.getParent() != null) Files.createDirectories(path.getParent());
+        if (path.getParent() != null) {
+            Files.createDirectories(path.getParent());
+        }
         try (OutputStream file = Files.newOutputStream(path)) {
             file.write(
                     "NRRD0005\n# Synthetic value: (x+3*y+7*z) modulo 256\ntype: uint8\ndimension: 3\nsizes: 500 500 500\nencoding: gzip\n\n"
                             .getBytes(StandardCharsets.US_ASCII));
             try (OutputStream payload = new GZIPOutputStream(file, 65536)) {
                 byte[] row = new byte[500];
-                for (int z = 0; z < 500; z++)
+                for (int z = 0; z < 500; z++) {
                     for (int y = 0; y < 500; y++) {
-                        for (int x = 0; x < 500; x++) row[x] = (byte) (x + 3 * y + 7 * z);
+                        for (int x = 0; x < 500; x++) {
+                            row[x] = (byte) (x + 3 * y + 7 * z);
+                        }
                         payload.write(row);
                     }
+                }
             }
         }
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length == 0) small(Paths.get("datasets"));
-        else if (args.length == 2 && args[0].equals("--benchmark"))
+        if (args.length == 0) {
+            writeSmallDatasets(Paths.get("datasets"));
+        } else if (args.length == 2 && args[0].equals("--benchmark")) {
             writeBenchmark(Paths.get(args[1]));
-        else
+        } else {
             throw new IllegalArgumentException("Usage: DatasetGenerator [--benchmark output.nrrd]");
+        }
     }
 }

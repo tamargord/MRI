@@ -39,6 +39,8 @@ Start at `Projection.main`, which calls `run` and prints an error if the run fai
 | `DatasetGenerator` | Makes small volumes whose values are known, plus the large benchmark volume. |
 | `Benchmark` | Times repeated projections after warmup, leaving file loading and encoding outside the timer. |
 
+In `MRIReader`, start with `loadMRI`, then follow `validateHeader`, `readSizes`, and `readDirections`. The data-reading loops are in `readAsciiValues` and `readBinaryValues`. In `Plane`, `leftSideLength`, `rightSideLength`, and `bottomLength` match the measurements used by the projection loop.
+
 The steps in `Projection.project` are:
 
 1. Allocate an image of zeros. Its height comes from the side length and its width from the bottom edge length, both rounded up.

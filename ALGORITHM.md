@@ -6,6 +6,8 @@ The main method to read is `Projection.project`. It creates one image for one pl
 
 `MRIReader` reads the NRRD header first. The header gives the array size, value type, byte order, compression, and coordinate information.
 
+In the code, `loadMRI` coordinates these steps. `validateHeader`, `readSizes`, and `readDirections` check and read the header fields. `readAsciiValues` and `readBinaryValues` read the voxel data, depending on the encoding.
+
 The values are stored in a one-dimensional array. NRRD stores the x values next to each other, so the position of voxel `(x,y,z)` is:
 
 ```text
@@ -45,6 +47,8 @@ The points must also lie on the same plane within `0.001` world units. Zero-leng
 ## Filling the image
 
 Let `L` be the length from `a1` to `b`, and `B` the bottom length from `b` to `c`. The output starts as a zero-filled array with `ceil(L)` rows and `ceil(B)` columns. It is stored as `image[y][x]`.
+
+The corresponding fields in `Plane` are `leftSideLength`, `rightSideLength`, and `bottomLength`. The point names stay the same as in the assignment.
 
 For each row:
 

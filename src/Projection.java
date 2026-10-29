@@ -18,17 +18,18 @@ public class Projection {
         return project(volume, plane);
     }
 
+    /** Returns raw voxel values as image[row][column], before grayscale scaling. */
     public static long[][] project(Volume volume, Plane plane) {
         long[][] image = new long[plane.height][plane.width];
-        Point3D side1 = plane.b.minus(plane.a1).times(1.0 / plane.length);
-        Point3D side2 = plane.c.minus(plane.a2).times(1.0 / plane.otherLength);
+        Point3D leftDirection = plane.b.minus(plane.a1).times(1.0 / plane.leftSideLength);
+        Point3D rightDirection = plane.c.minus(plane.a2).times(1.0 / plane.rightSideLength);
 
         for (int y = 0; y < plane.height; y++) {
             // Move one unit down each side. The last row stops at the endpoints.
-            double distance1 = Math.min(y + 1.0, plane.length);
-            double distance2 = Math.min(y + 1.0, plane.otherLength);
-            Point3D left = plane.a1.plus(side1.times(distance1));
-            Point3D right = plane.a2.plus(side2.times(distance2));
+            double leftDistance = Math.min(y + 1.0, plane.leftSideLength);
+            double rightDistance = Math.min(y + 1.0, plane.rightSideLength);
+            Point3D left = plane.a1.plus(leftDirection.times(leftDistance));
+            Point3D right = plane.a2.plus(rightDirection.times(rightDistance));
             Point3D across = right.minus(left);
             double span = across.length();
             Point3D startVoxel = volume.worldToVoxel(left);
@@ -41,7 +42,7 @@ public class Projection {
             // Convert the row direction once instead of converting every pixel.
             Point3D step = volume.worldVectorToVoxel(across.times(1.0 / span));
             int lastSample = (int) Math.floor(span + 0.000000001);
-            double leftMargin = (plane.base - span) / 2.0;
+            double leftMargin = (plane.bottomLength - span) / 2.0;
             for (int k = 0; k <= lastSample; k++) {
                 int x = (int) Math.round(leftMargin + k);
                 if (x >= 0 && x < plane.width) {
@@ -147,7 +148,7 @@ public class Projection {
         }
     }
 
-    private static void deleteFrames(Path directory) throws IOException {
+    private static void deleteTemporaryFiles(Path directory) throws IOException {
         // Only this run's temporary files are removed.
         try (DirectoryStream<Path> files = Files.newDirectoryStream(directory)) {
             for (Path file : files) {
@@ -224,7 +225,7 @@ public class Projection {
             if (temporaryVideo != null) {
                 Files.deleteIfExists(temporaryVideo);
             }
-            deleteFrames(directory);
+            deleteTemporaryFiles(directory);
         }
     }
 

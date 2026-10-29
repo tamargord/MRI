@@ -1,26 +1,32 @@
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Locale;
 
 /** Projection-only benchmark: loading and dataset generation are outside the timer. */
 public final class Benchmark {
     // Keep a checksum so the benchmark uses the calculated image values.
-    private static long sink;
+    private static long sampleChecksum;
 
     private Benchmark() {}
 
     public static void main(String[] args) throws Exception {
-        if (args.length > 1)
+        if (args.length > 1) {
             throw new IllegalArgumentException("Usage: Benchmark [500-cubed-u8.nrrd]");
+        }
         Path path = Paths.get(args.length == 0 ? "output/benchmark500.nrrd" : args[0]);
-        if (args.length == 0 && !Files.exists(path)) DatasetGenerator.writeBenchmark(path);
+        if (args.length == 0 && !Files.exists(path)) {
+            DatasetGenerator.writeBenchmark(path);
+        }
         Volume volume = MRIReader.loadMRI(path);
         if (volume.sx != 500
                 || volume.sy != 500
                 || volume.sz != 500
                 || volume.bits != 8
-                || volume.signed)
+                || volume.signed) {
             throw new IllegalArgumentException(
                     "Benchmark requires a 500 x 500 x 500 unsigned-byte volume");
+        }
         Plane[] planes = {
             new Plane(
                     new Point3D(0, -1, 250),
@@ -63,11 +69,13 @@ public final class Benchmark {
                         + batches);
         System.out.println(
                 "Timed work includes geometry setup, output allocation, sampling, and one observed"
-                    + " pixel per projection; excludes loading, rendering and encoding.");
+                        + " pixel per projection; excludes loading, rendering and encoding.");
         System.out.println("plane,width,height,batch,total_ms,average_ms,fps,checksum");
         for (int p = 0; p < planes.length; p++) {
             Plane plane = planes[p];
-            for (int i = 0; i < warmup; i++) observe(Projection.project(volume, plane), i);
+            for (int i = 0; i < warmup; i++) {
+                addSampleToChecksum(Projection.project(volume, plane), i);
+            }
             double[] fps = new double[batches];
             for (int batch = 0; batch < batches; batch++) {
                 long checksum = 0, start = System.nanoTime();
@@ -77,7 +85,7 @@ public final class Benchmark {
                     checksum += image[i % image.length][(i * 17) % image[0].length];
                 }
                 long duration = System.nanoTime() - start;
-                sink = checksum;
+                sampleChecksum = checksum;
                 double ms = duration / 1e6;
                 fps[batch] = iterations * 1000.0 / ms;
                 System.out.printf(
@@ -104,7 +112,7 @@ public final class Benchmark {
             System.out.printf(
                     Locale.ROOT,
                     "SUMMARY %s mean_fps=%.3f min_fps=%.3f max_fps=%.3f mandatory_30=%s"
-                        + " expected_100=%s%n",
+                            + " expected_100=%s%n",
                     names[p],
                     mean,
                     min,
@@ -112,10 +120,10 @@ public final class Benchmark {
                     min >= 30 ? "PASS" : "FAIL",
                     min >= 100 ? "PASS" : "FAIL");
         }
-        System.out.println("observable_sink=" + sink);
+        System.out.println("observable_sink=" + sampleChecksum);
     }
 
-    private static void observe(long[][] image, int i) {
-        sink += image[i % image.length][(i * 17) % image[0].length];
+    private static void addSampleToChecksum(long[][] image, int i) {
+        sampleChecksum += image[i % image.length][(i * 17) % image[0].length];
     }
 }

@@ -31,6 +31,8 @@ A video can have slightly different pixel values because H.264 compresses the im
 
 The Java tests compare raw image values exactly. There was no direct comparison with 3D Slicer. The [test log](experiments/java8-verification-2026-10-27.txt) has the full commands and output, including compilation on an actual Java 8 JDK.
 
+After the code readability cleanup on 2026-10-29, compilation was repeated with the same Java 8 `-source 1.8 -target 1.8 -Xlint:all` command and completed without warnings. The regression suite again passed 1002 checks, and the integration suite passed 24 checks. Decoded frame errors remained MAE 2.094 / maximum 9 and MAE 4.521 / maximum 21. This check covers the renamed fields and methods, extracted MRI-reading helpers, and simplified dataset byte-writing loop. The benchmark tables below describe the earlier recorded runs.
+
 ## Example videos
 
 | File | Frames | Size | Length at 30 FPS |

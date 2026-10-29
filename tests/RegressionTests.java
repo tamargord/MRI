@@ -110,7 +110,7 @@ public final class RegressionTests {
     public static void main(String[] args) throws Exception {
         Path temp = Files.createTempDirectory("mri-regression-");
         try {
-            DatasetGenerator.small(temp);
+            DatasetGenerator.writeSmallDatasets(temp);
             Volume rotated = MRIReader.loadMRI(temp.resolve("coded-u16-rotated.nrrd"));
             check(rotated.sx == 8 && rotated.sy == 7 && rotated.sz == 6, "header sizes");
             for (int z = 0; z < 6; z++)
@@ -177,7 +177,7 @@ public final class RegressionTests {
                     for (String encoding : Arrays.asList("raw", "gzip", "ascii"))
                         for (String endian : Arrays.asList("little", "big")) {
                             Path fixture = temp.resolve("limits.nrrd");
-                            DatasetGenerator.write(
+                            DatasetGenerator.writeVolume(
                                     fixture,
                                     (isSigned ? "int" : "uint") + bits,
                                     "2 2 1",
@@ -310,7 +310,7 @@ public final class RegressionTests {
             }
             writeText(bad, "NRRD0005\ntype: uint8");
             badMRI(bad);
-            DatasetGenerator.write(
+            DatasetGenerator.writeVolume(
                     bad, "uint8", "1 1 1", "ascii", "little", "", "\n", new long[] {256}, 8);
             badMRI(bad);
             badArguments(new String[0]);

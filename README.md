@@ -2,6 +2,37 @@
 
 This is my Java 8 project for Exercise 1. It takes a 3D MRI and creates 2D images from it. The points for each image come from a CSV file. The images are then joined into an MP4 video.
 
+## Start here for the presentation
+
+Read [PRESENTATION.md](PRESENTATION.md) for a five-minute walkthrough, a small worked example, and questions to practice.
+
+1. Open `Projection.java` in IntelliJ and select the `Projection` run configuration.
+2. Use Java 8, the project folder as the working directory, and these program arguments:
+
+   ```text
+   MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4
+   ```
+
+3. Run the program. It should report `90 frames, 100x106, 30 playback FPS`.
+4. Open [demo.mp4](demo.mp4). It lasts three seconds; replay it while explaining the changing MRI sections.
+5. Explain `Projection.project`, then show the tests and speed results below.
+
+The shorter [projection.mp4](projection.mp4) has only three frames and lasts 0.1 seconds, so it can look like a still image.
+
+## Where to find things
+
+| Location | Purpose |
+| --- | --- |
+| [src](src) | Java application, data generator and speed test |
+| [tests](tests) | Correctness and video tests |
+| [datasets](datasets/README.md) | Small test volumes and plane lists |
+| [SRS.md](SRS.md) | What the program must do and its limits |
+| [ALGORITHM.md](ALGORITHM.md) | Detailed explanation of the calculations |
+| [EXPERIMENT.md](EXPERIMENT.md) | Test method, measurements and assignment checklist |
+| [experiments](experiments/README.md) | Saved test and benchmark logs |
+
+The root `frame_*.png` files and `projection.png` are older examples. The current program creates its own temporary frames for each video. `out/` holds compiled classes; `output/` holds local generated files and tools.
+
 ## Running it
 
 You need JDK 8 and FFmpeg. From the project folder, run:
@@ -37,11 +68,13 @@ The full steps and formulas are in [ALGORITHM.md](ALGORITHM.md).
 
 [projection.mp4](projection.mp4) has three frames, one for each row in `planes.csv`. It lasts 0.1 seconds at 30 FPS. [demo.mp4](demo.mp4) is a longer example with 90 frames.
 
-The tests use small arrays where the correct values are known. They also check bad input and the video output. The speed test uses a 500 x 500 x 500 byte volume. Its slowest measured batch was about 686 FPS on the test computer, above the assignment's 100 FPS target. This measures projection only.
+The tests use small arrays where the correct values are known. They also check bad input and the video output. The latest checks passed 1002 Java checks and 24 video/command-line checks.
+
+The speed test uses a 500 x 500 x 500 byte volume. On 2026-10-29, its slowest measured batch was 711.640 FPS on the test computer, above the assignment's 100 FPS target. This measures projection only; the saved video plays at 30 FPS.
 
 Commands and results are in [EXPERIMENT.md](EXPERIMENT.md).
 
-For a live demonstration, use `MRHead_1.nrrd datasets/mri-sweep.csv demo.mp4` as the IntelliJ program arguments. This produces 90 frames (3 seconds), which is easier to show than the three-frame example. To demonstrate both supported plane shapes, use `datasets/coded-u16-rotated.nrrd datasets/mixed-planes.csv datasets/mixed-demo.mp4`.
+To demonstrate both supported plane shapes, use `datasets/coded-u16-rotated.nrrd datasets/mixed-planes.csv datasets/mixed-demo.mp4` as the IntelliJ program arguments. That small test produces two frames; use it to explain the input and tests rather than as the main video to watch.
 
 The [assignment review from 2026-10-29](EXPERIMENT.md#assignment-review-2026-10-29) maps the eight deliverables to the project and records the latest test and speed results.
 

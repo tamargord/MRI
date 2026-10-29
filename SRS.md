@@ -1,6 +1,6 @@
 # SRS - project requirements
 
-Exercise 1, Java 8. Updated 2026-10-27.
+Exercise 1, Java 8. Updated 2026-10-29.
 
 The goal is to read an MRI file and a list of planes, then create a video with one image for each plane.
 

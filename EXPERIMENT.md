@@ -1,6 +1,6 @@
 # Tests and results
 
-The original results below were recorded on 2026-10-27 for the Java 8 version. The dated assignment review at the end records the follow-up checks on 2026-10-29.
+The original results below were recorded on 2026-10-27 for the Java 8 version. The dated assignment review at the end records the follow-up checks on 2026-10-29. The Java-only test conversion and its verification on 2026-11-02 are recorded separately below. Older dated commands and logs retain the test runner used at that time.
 
 ## Computer used
 
@@ -13,14 +13,14 @@ With JDK 8, FFmpeg, and FFprobe available, run:
 ```powershell
 javac -d out src/*.java tests/*.java
 java -cp out RegressionTests
-py tests/integration_test.py
+java -cp out IntegrationTests
 ```
 
-The Python script is an extra test for the video output. It needs Python 3; use `python3` instead of `py` if necessary. The application itself is Java 8.
+`IntegrationTests.java` is the extra test for the video output. All current application and test code uses Java 8 with no third-party Java libraries. Run both suites from the project folder after compiling into `out`.
 
 The Java tests use small arrays with known values. They check different data types, point directions, triangles, four-point sections, rounding, samples outside the array, and invalid input. The recorded run passed 1002 assertions. This includes repeated checks for individual pixels and file formats.
 
-The video script runs the program and checks the output's frame count, order, size, and image values. It also checks bad arguments, CSV errors, missing FFmpeg, old PNGs, and a shorter second run. It passed 24 checks. Failed runs kept the existing output video.
+The video integration suite runs the program and checks the output's frame count, order, size, and image values. It also checks bad arguments, CSV errors, missing FFmpeg, old PNGs, and a shorter second run. It passed 24 checks. Failed runs kept the existing output video.
 
 A video can have slightly different pixel values because H.264 compresses the images. The test allows a mean error of 8 and a maximum error of 30 out of 255. The measured errors were:
 
@@ -32,6 +32,14 @@ A video can have slightly different pixel values because H.264 compresses the im
 The Java tests compare raw image values exactly. There was no direct comparison with 3D Slicer. The [test log](experiments/java8-verification-2026-10-27.txt) has the full commands and output, including compilation on an actual Java 8 JDK.
 
 After the code readability cleanup on 2026-10-29, compilation was repeated with the same Java 8 `-source 1.8 -target 1.8 -Xlint:all` command and completed without warnings. The regression suite again passed 1002 checks, and the integration suite passed 24 checks. Decoded frame errors remained MAE 2.094 / maximum 9 and MAE 4.521 / maximum 21. This check covers the renamed fields and methods, extracted MRI-reading helpers, and simplified dataset byte-writing loop. The benchmark tables below describe the earlier recorded runs.
+
+## Java-only tests verified 2026-11-02
+
+The video integration suite was converted to `tests/IntegrationTests.java`, and the former Python test file was removed. It uses Java's standard library to launch the application, read FFprobe key/value output, decode video with FFmpeg, and compare unsigned grayscale bytes. Its reference calculation uses the fixture's analytic inverse transform and does not call the application's geometry, projection, or grayscale methods.
+
+The same 24 end-to-end checks cover frame count, size, rate, content and order, stale images, shorter reruns, missing and failing encoders, invalid arguments, invalid CSV, preservation of existing output, and temporary video cleanup. Child application runs use the same Java installation as the test runner. Each command has a 60-second timeout, and captured output and test files are cleaned up.
+
+On the existing Temurin 8u504-b01 JDK, compilation with `-source 1.8 -target 1.8 -Xlint:all` completed without warnings. The regression suite passed 1002 checks and the Java integration suite passed 24 checks. Decoded frame errors were MAE 2.094 / maximum 9 and MAE 4.521 / maximum 21, matching the earlier recorded results. The [verification log](experiments/java8-java-only-tests-2026-11-02.txt) records the commands and output. No application or benchmark code changed, and no new benchmark measurement was taken.
 
 ## Example videos
 

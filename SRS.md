@@ -1,6 +1,6 @@
 # SRS - project requirements
 
-Exercise 1, Java 8. Updated 2026-10-29.
+Exercise 1, Java 8. Updated 2026-11-02.
 
 The goal is to read an MRI file and a list of planes, then create a video with one image for each plane.
 
@@ -47,10 +47,12 @@ If no origin is given, it is `(0,0,0)`. If no directions are given, the program 
 
 Detached NRRD data, nonzero byte/line skips, nonspatial axes, floating-point values, unsupported encodings, and a coordinate transform with no usable inverse are rejected. LPS and RAS coordinates are not automatically converted.
 
-The current version was tested with JDK 8 on Windows 11. FFmpeg is required to make the video. IntelliJ is set to Java 8 language and bytecode levels; the user must select a JDK 8 installation.
+The current version was tested with JDK 8 on Windows 11. All application and test source code is Java 8. FFmpeg is required to make the video; the integration tests also require FFprobe. IntelliJ is set to Java 8 language and bytecode levels; the user must select a JDK 8 installation.
 
 The recorded tests passed 1002 Java assertions and 24 video/CLI checks. These are individual checks, including repeated pixel and file-format checks. The slowest speed-test batch was about 686 FPS. No direct comparison in 3D Slicer was made. [EXPERIMENT.md](EXPERIMENT.md) contains the commands and logs, and [datasets/README.md](datasets/README.md) describes the data.
 
 The assignment review on 2026-10-29 reran both suites on Java 8 with the same passing check counts. The fresh benchmark's slowest batch was 711.640 FPS. The original results above remain the 2026-10-27 measurements; the dated review in EXPERIMENT.md records the newer run separately.
 
 The final check after the code readability cleanup on 2026-10-29 again passed both suites with the same counts. Its slowest benchmark batch was 735.346 FPS. Fresh real-MRI and mixed-plane videos, along with the three submitted example videos, passed frame-count, dimensions, playback-rate, duration, and decoding checks. The final results are recorded in [EXPERIMENT.md](EXPERIMENT.md#final-check-after-code-cleanup-2026-10-29).
+
+On 2026-11-02, the video integration tests were converted to Java. Compilation on JDK 8 with all lint warnings enabled completed without warnings. `RegressionTests` passed 1002 checks and `IntegrationTests` passed 24 checks, including independent reference-image comparisons and output preservation after failed runs. The application and benchmark code did not change; benchmark results above remain the dated measurements.

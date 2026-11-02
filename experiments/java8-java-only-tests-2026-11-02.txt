@@ -1,0 +1,19 @@
+Java-only test verification, 2026-11-02
+Working directory: project root
+JDK: existing Temurin 8u504-b01 installation under output/java8/jdk8u504-b01
+FFmpeg and FFprobe available on PATH
+
+$ & ./output/java8/jdk8u504-b01/bin/javac.exe -source 1.8 -target 1.8 -Xlint:all -d out src/*.java tests/*.java
+Exit status: 0; no compiler warnings or other output.
+
+$ & ./output/java8/jdk8u504-b01/bin/java.exe -cp out RegressionTests
+PASS: 1002 checks (loading, transforms, analytic projections, malformed inputs, display)
+Exit status: 0
+
+$ & ./output/java8/jdk8u504-b01/bin/java.exe -cp out IntegrationTests
+Frame 0: independent grayscale reference, decoded MAE=2.094, max error=9
+Frame 1: independent grayscale reference, decoded MAE=4.521, max error=21
+PASS: 24 end-to-end checks
+Exit status: 0
+
+The application and benchmark source were unchanged. No new benchmark was run.

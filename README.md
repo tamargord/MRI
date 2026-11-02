@@ -64,16 +64,16 @@ Invalid rows are reported with their line number. The supplied [datasets](datase
 
 ## Testing and results
 
-I used small volumes with known values to check the raw projection results. The tests cover coordinate conversion, rotated axes, both plane shapes, rounding, out-of-bounds samples, and invalid input. A separate Python test checks the running Java program and the encoded video, including frame count, order, image content, and failed runs.
+I used small volumes with known values to check the raw projection results. The tests cover coordinate conversion, rotated axes, both plane shapes, rounding, out-of-bounds samples, and invalid input. A separate Java integration test checks the running Java program and the encoded video, including frame count, order, image content, and failed runs. All application and test code is Java 8, with no third-party Java libraries.
 
-The recorded Java 8 run on **29 October 2026** passed **1002 Java checks** and **24 video/command-line checks**. These are individual checks, including repeated pixel and file-format checks, rather than 1002 separate test cases.
+The recorded Java 8 run on **2 November 2026** passed **1002 regression checks** and **24 video/command-line checks** using the Java test suites. These are individual checks, including repeated pixel and file-format checks, rather than 1002 separate test cases.
 
-To run the checks with JDK 8, Python 3, FFmpeg, and FFprobe available:
+To run the checks with JDK 8, FFmpeg, and FFprobe available:
 
 ```powershell
 javac -d out src/*.java tests/*.java
 java -cp out RegressionTests
-py tests/integration_test.py
+java -cp out IntegrationTests
 ```
 
 The speed test uses a **500 × 500 × 500 unsigned-byte volume**. After warmup, it measures repeated projections of a rectangle, a triangle, and an oblique section. On the test computer (Windows 11, Ryzen 9 7940HS, about 32 GB RAM), the slowest measured batch in the final check on 29 October 2026 was **735.346 projection FPS**, above the assignment's 30 FPS minimum and 100 FPS target.
@@ -97,7 +97,7 @@ Correctness was checked using known-value test volumes and video tests. No direc
 | Location | Contents |
 | --- | --- |
 | [src](src) | Java source code, dataset generator, and benchmark |
-| [tests](tests) | Java regression tests and Python video tests |
+| [tests](tests) | Java regression and video integration tests |
 | [datasets](datasets/README.md) | Test volumes and plane lists, with descriptions |
 | [SRS.md](SRS.md) | Requirements and supported scope |
 | [ALGORITHM.md](ALGORITHM.md) | Detailed algorithm and implementation choices |

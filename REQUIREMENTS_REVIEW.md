@@ -19,8 +19,8 @@ Reviewed source commit `0bd4068` against all four pages of `I2SE_Exe1.docx.pdf`.
 | Nearest-voxel decisions justified | ALGORITHM.md defines Math.round ties, bounds, ceiling dimensions, fractional final rows, and nearest-voxel rationale. Added-page guidance permits such discretization choices. PASS. |
 | Required documentation and supplementary links | Build/run commands, docs, benchmark material and videos are present; every relative file link in root Markdown documents resolves locally. PASS. |
 | Public GitHub repository | Anonymous access to https://github.com/tamargord/MRI returned HTTP 404. Authenticated Git access works and the remote master matched the reviewed commit. Public access is NOT VERIFIED; confirm or change visibility in GitHub before submission. |
-| Moodle text file | submission.txt contains the supplied ID 314874678 and repository link. File ready; Moodle upload not performed by this agent. |
-| Submission form | Exact form link is in SUBMISSION.md. Form submission not performed by this agent. |
+| Moodle text file | Personal submission files are kept outside version control. Moodle upload not performed by this agent. |
+| Submission form | Use the link in the assignment PDF. Form submission not performed by this agent. |
 
 ## Fresh performance measurements
 

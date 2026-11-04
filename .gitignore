@@ -29,3 +29,7 @@ bin/
 .DS_Store
 # Reproducible generated datasets, benchmark logs, and temporary runs
 /output/
+
+# Personal submission files stay local
+/submission.txt
+/SUBMISSION.md

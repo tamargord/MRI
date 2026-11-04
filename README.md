@@ -107,7 +107,7 @@ Correctness was checked using known-value test volumes and video tests. No direc
 
 The program creates temporary frame images for each run and removes them afterward. The root `frame_*.png` files and `projection.png` are older examples. Compiled classes go in `out/`, and local generated files go in `output/`.
 
-## Added-page demo and submission
+## Added-page demo
 
 The added assignment page is implemented by recovering from per-row validation exceptions in the demo. To see valid sections interleaved with marked errors:
 
@@ -115,6 +115,6 @@ The added assignment page is implemented by recovering from per-row validation e
 java -cp out Projection MRHead_1.nrrd datasets/error-recovery.csv datasets/error-recovery.mp4
 ```
 
-The [error-recovery video](datasets/error-recovery.mp4) has five frames: valid, error, valid, error, valid. [SUBMISSION.md](SUBMISSION.md) lists the Moodle text-file and form steps. The supplied student ID is filled in `submission.txt`; review it before submitting. The repository must be public; this still needs checking in GitHub settings because anonymous access returned HTTP 404 during the 4 November check.
+The [error-recovery video](datasets/error-recovery.mp4) has five frames: valid, error, valid, error, valid. The repository must be public; this still needs checking in GitHub settings because anonymous access returned HTTP 404 during the 4 November check.
 
 The [four-page requirements review](REQUIREMENTS_REVIEW.md) records the latest requirement-by-requirement checks, fresh performance measurements, video checks, and outstanding submission steps.

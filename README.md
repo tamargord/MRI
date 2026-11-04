@@ -50,7 +50,7 @@ The CSV has no header. Each nonempty row contains either nine numbers for three 
 - **Three points, `a,b,c`:** an isosceles triangle. The two sides from `a` must differ in length by less than `0.001`, and the points must not be on one straight line.
 - **Four points, `a1,a2,b,c`:** a section with sides `a1` to `b` and `a2` to `c` equal within the same tolerance. The points must be coplanar, the top edge cannot be longer than the bottom edge, and crossing or zero-length sides are rejected. The two top points may be the same, which also lets the algorithm handle a triangle.
 
-Invalid rows are reported with their line number. The supplied [datasets](datasets/README.md) include both plane shapes and small volumes with known values.
+Invalid nonempty rows produce a black error frame marked with the physical CSV line number, and a console warning explains the problem. Valid rows continue in order. If any row is invalid, the common canvas is at least 320 x 180 so the marking is readable; an all-invalid list produces only error frames. Blank lines are skipped. The strict `CSVReader.readPlanes` API still throws an exception on invalid rows. The supplied [datasets](datasets/README.md) include both plane shapes and small volumes with known values.
 
 ## Example output
 
@@ -66,7 +66,7 @@ Invalid rows are reported with their line number. The supplied [datasets](datase
 
 I used small volumes with known values to check the raw projection results. The tests cover coordinate conversion, rotated axes, both plane shapes, rounding, out-of-bounds samples, and invalid input. A separate Java integration test checks the running Java program and the encoded video, including frame count, order, image content, and failed runs. All application and test code is Java 8, with no third-party Java libraries.
 
-The recorded Java 8 run on **2 November 2026** passed **1002 regression checks** and **24 video/command-line checks** using the Java test suites. These are individual checks, including repeated pixel and file-format checks, rather than 1002 separate test cases.
+The recorded Java 8 run on **4 November 2026** passed **1002 regression checks** and **47 video/command-line checks** using the Java test suites. These are individual checks, including repeated pixel and file-format checks, rather than 1002 separate test cases.
 
 To run the checks with JDK 8, FFmpeg, and FFprobe available:
 
@@ -106,3 +106,13 @@ Correctness was checked using known-value test volumes and video tests. No direc
 | [PRESENTATION.md](PRESENTATION.md) | Presentation notes and a worked example |
 
 The program creates temporary frame images for each run and removes them afterward. The root `frame_*.png` files and `projection.png` are older examples. Compiled classes go in `out/`, and local generated files go in `output/`.
+
+## Added-page demo and submission
+
+The added assignment page is implemented by recovering from per-row validation exceptions in the demo. To see valid sections interleaved with marked errors:
+
+```powershell
+java -cp out Projection MRHead_1.nrrd datasets/error-recovery.csv datasets/error-recovery.mp4
+```
+
+The [error-recovery video](datasets/error-recovery.mp4) has five frames: valid, error, valid, error, valid. [SUBMISSION.md](SUBMISSION.md) lists the Moodle text-file and form steps. Replace the student-ID placeholder in `submission.txt` before submitting. The repository must be public; this still needs checking in GitHub settings because anonymous access returned HTTP 404 during the 4 November check.

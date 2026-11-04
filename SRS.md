@@ -1,6 +1,6 @@
 # SRS - project requirements
 
-Exercise 1, Java 8. Updated 2026-11-02.
+Exercise 1, Java 8. Updated 2026-11-04.
 
 The goal is to read an MRI file and a list of planes, then create a video with one image for each plane.
 
@@ -21,13 +21,13 @@ The CSV has no header. Each nonempty row contains three or four points, written 
 1. Accept exactly three filenames and show a usage message otherwise.
 2. Read the volume size, value type, and coordinate information from the NRRD header. Report an error for a bad or unsupported file.
 3. Keep the original signed values and the full unsigned 8/16/32-bit ranges when creating the image array.
-4. Read CSV rows in order, skip blank lines, and report the line number when coordinates are missing or invalid. NaN and infinity are invalid.
+4. Read CSV rows in order and skip blank lines. Invalid point sets raise validation exceptions with tolerance 0.001; the demo catches row errors and inserts a black frame marked with the physical CSV line number, reports the reason, and continues. Malformed coordinates, NaN, infinity, and wrong field counts follow the same recovery policy. The strict reader API still throws on invalid rows. An all-invalid list produces an error video; an empty or unreadable CSV is fatal.
 5. Check that three points form an isosceles triangle. The side lengths must differ by less than `0.001`; the points cannot be collinear.
 6. For four points, check equal side lengths within `0.001`, coplanarity within `0.001`, and a top edge no longer than the bottom. Reject crossing sides and zero-length sides. A repeated top point is allowed.
 7. Find the nearest voxel for each sample. Return zero if its rounded position is outside the array.
 8. Build the image row by row using the assignment's algorithm. Explain how rounding and the final row are handled.
 9. Convert the image to grayscale. An all-zero image must stay black. Keep the original values separate from the display values.
-10. Put one frame per CSV row into the video, in the same order. Use one frame size and do not include old images from earlier runs.
+10. Put one frame per nonempty CSV row into the video, including error frames, in the same order. Use one frame size and do not include old images from earlier runs. When errors occur, use at least 320 x 180 pixels for readable labels; center valid sections without resampling.
 11. Report file and encoder errors. Return a nonzero exit status and keep an existing output video if checking input or encoding fails.
 12. Provide a speed test that times projection separately from loading and video creation.
 
@@ -56,3 +56,5 @@ The assignment review on 2026-10-29 reran both suites on Java 8 with the same pa
 The final check after the code readability cleanup on 2026-10-29 again passed both suites with the same counts. Its slowest benchmark batch was 735.346 FPS. Fresh real-MRI and mixed-plane videos, along with the three submitted example videos, passed frame-count, dimensions, playback-rate, duration, and decoding checks. The final results are recorded in [EXPERIMENT.md](EXPERIMENT.md#final-check-after-code-cleanup-2026-10-29).
 
 On 2026-11-02, the video integration tests were converted to Java. Compilation on JDK 8 with all lint warnings enabled completed without warnings. `RegressionTests` passed 1002 checks and `IntegrationTests` passed 24 checks, including independent reference-image comparisons and output preservation after failed runs. The application and benchmark code did not change; benchmark results above remain the dated measurements.
+
+On 2026-11-04, the added-page error-frame policy passed warning-free Java 8 compilation, 1002 regression checks, and 47 end-to-end checks. File-level and encoder failures remain fatal and preserve existing output. Projection and benchmark code are unchanged; the dated speed results above still apply. Submission instructions and a text-file template are included; student IDs, public visibility verification, and external submissions remain user steps.

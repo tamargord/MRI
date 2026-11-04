@@ -55,3 +55,7 @@ java -cp out DatasetGenerator --benchmark output/benchmark500.nrrd
 ```
 
 The large file stays in `output/` and is not uploaded to GitHub. The code that creates it and the speed-test results are in the repository.
+
+## Error recovery demo (added assignment page)
+
+`error-recovery.csv` interleaves the three original MRI sections with an invalid triangle and a crossing four-point region. `error-recovery.mp4` contains five ordered frames at 320 x 180 and 30 FPS, with error labels at CSV lines 2 and 4. Its duration is about 0.167 seconds; pause or step through frames to inspect it.

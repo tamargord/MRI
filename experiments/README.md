@@ -2,6 +2,8 @@
 
 Current Java 8 version:
 
+- [java8-error-recovery-2026-11-04.txt](java8-error-recovery-2026-11-04.txt): added-page implementation, warning-free compilation, 1002 regression checks, 47 end-to-end checks, and five-frame recovery demo metadata.
+
 - [java8-java-only-tests-2026-11-02.txt](java8-java-only-tests-2026-11-02.txt): warning-free Java 8 compilation and both Java test suites after converting the video integration tests to Java.
 - [java8-final-audit-2026-10-29.txt](java8-final-audit-2026-10-29.txt): final assignment check after the code cleanup, including tests, benchmark, fresh demos, and submitted video checks.
 - [java8-benchmark-2026-10-29.txt](java8-benchmark-2026-10-29.txt): fresh benchmark for the assignment review before the teacher demonstration.

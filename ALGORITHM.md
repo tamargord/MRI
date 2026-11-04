@@ -76,7 +76,7 @@ gray = round(value * 255 / imageMaximum)
 
 An all-zero or all-negative image is black. Every frame uses its own maximum, so brightness can change between frames.
 
-All frames use the largest image width and height, rounded up to even numbers. Smaller images are centered on black. The code saves temporary PNG files and asks FFmpeg to join them into an MP4 at 30 FPS. FFmpeg uses H.264, CRF 18, and `yuv420p`.
+All frames use the largest valid image width and height, rounded up to even numbers. Invalid nonempty CSV rows are caught as row validation exceptions and rendered as black error frames with white text identifying the physical line number; their detailed reasons go to the console. Valid rows keep their original order. Any error raises the minimum canvas to 320 x 180, also used for all-invalid input. Empty CSV and file-level errors remain fatal. Smaller images are centered on black. The code saves temporary PNG files and asks FFmpeg to join them into an MP4 at 30 FPS. FFmpeg uses H.264, CRF 18, and `yuv420p`.
 
 Each run uses a new temporary folder and gives FFmpeg the exact number of frames. Afterward, the temporary files are deleted. The old output video is replaced only after encoding succeeds and produces a nonempty file. The root PNG files are old examples and are not used by the program.
 
@@ -90,3 +90,5 @@ Each run uses a new temporary folder and gives FFmpeg the exact number of frames
 - `Projection.java`: creating images and calling FFmpeg.
 - `DatasetGenerator.java`: creating test data.
 - `Benchmark.java`: measuring projection speed.
+
+Nearest-voxel sampling is intentional: the data is a discrete raster, rounding selects a nearby stored measurement without inventing interpolated values, and it meets the added-page guidance without super-resolution. Ties and boundary behavior are defined above and covered by analytic tests.

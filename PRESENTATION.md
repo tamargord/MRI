@@ -86,7 +86,7 @@ In the inner projection loop, the code uses a converted starting point plus `k` 
 Open [EXPERIMENT.md](EXPERIMENT.md), then point to the corresponding test code or saved log.
 
 - `RegressionTests.java`: 1002 checks, including known voxel values, rotated coordinates, triangles, four-point sections, rounding and invalid inputs. These are individual checks, including repeated pixel checks.
-- `IntegrationTests.java`: 24 checks of the running Java program and encoded video, including frame order, count, content, errors and reruns. It calculates expected images independently of the application code. Both test suites passed on Java 8 on 2026-11-02; all application and test code is Java.
+- `IntegrationTests.java`: 47 checks of the running Java program and encoded video, including frame order, count, content, errors and reruns. It calculates expected images independently of the application code. Both test suites passed on Java 8 on 2026-11-04; all application and test code is Java.
 - `Benchmark.java`: a 500 x 500 x 500 unsigned-byte volume, 150 warmup projections per plane, then five batches of 300. In the final check on 2026-10-29, the slowest batch was 735.346 projection FPS. The assignment requires 30 FPS and expects 100 FPS.
 
 The video plays at 30 FPS. Benchmark FPS measures how quickly the algorithm computes images; loading, PNG creation and MP4 encoding are excluded. Results depend on the computer and the tested planes.
@@ -109,7 +109,7 @@ The video plays at 30 FPS. Benchmark FPS measures how quickly the algorithm comp
 
 **How much work does projection take?** At most approximately the number of pixels in the image: `O(height * width)` time and output memory. The loaded volume uses separate memory proportional to its voxel count and value width.
 
-**What happens if something is wrong?** Invalid arguments, files, coordinates and shapes produce an error. CLI failures return a nonzero status. A failed input check or encoding step preserves an existing output video.
+**What happens if something is wrong?** Invalid coordinates and shapes raise validation exceptions. The demo catches row errors and inserts marked black frames, then continues with valid rows. Show `datasets/error-recovery.mp4` and its CSV. File-level errors, empty CSV, invalid arguments, and encoder failures return a nonzero status and preserve an existing output video.
 
 **What are the limits?** The supported NRRDs contain a scalar 3D integer volume with data in the same file, using raw, gzip or ASCII encoding. Floating-point and detached data are unsupported. The volume must fit in memory, and a frame is limited to 16 million pixels. LPS/RAS coordinate conversion is not automatic. There has been no direct pixel comparison against 3D Slicer.
 

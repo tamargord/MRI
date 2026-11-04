@@ -76,7 +76,7 @@ java -cp out RegressionTests
 java -cp out IntegrationTests
 ```
 
-The speed test uses a **500 × 500 × 500 unsigned-byte volume**. After warmup, it measures repeated projections of a rectangle, a triangle, and an oblique section. On the test computer (Windows 11, Ryzen 9 7940HS, about 32 GB RAM), the slowest measured batch in the final check on 29 October 2026 was **735.346 projection FPS**, above the assignment's 30 FPS minimum and 100 FPS target.
+The speed test uses a **500 × 500 × 500 unsigned-byte volume**. After warmup, it measures repeated projections of a rectangle, a triangle, and an oblique section. On the test computer (Windows 11, Ryzen 9 7940HS, about 32 GB RAM), the slowest measured batch in the requirements review on 4 November 2026 was **755.018 projection FPS**, above the assignment's 30 FPS minimum and 100 FPS target.
 
 ```powershell
 java -Xms256m -Xmx1g -cp out Benchmark
@@ -116,3 +116,5 @@ java -cp out Projection MRHead_1.nrrd datasets/error-recovery.csv datasets/error
 ```
 
 The [error-recovery video](datasets/error-recovery.mp4) has five frames: valid, error, valid, error, valid. [SUBMISSION.md](SUBMISSION.md) lists the Moodle text-file and form steps. The supplied student ID is filled in `submission.txt`; review it before submitting. The repository must be public; this still needs checking in GitHub settings because anonymous access returned HTTP 404 during the 4 November check.
+
+The [four-page requirements review](REQUIREMENTS_REVIEW.md) records the latest requirement-by-requirement checks, fresh performance measurements, video checks, and outstanding submission steps.

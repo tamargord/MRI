@@ -1,3 +1,6 @@
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -91,6 +94,22 @@ public class Projection {
         ImageIO.write(image, "png", Paths.get(filename).toFile());
     }
 
+    private static BufferedImage errorFrame(int width, int height, int lineNumber) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+        Graphics2D graphics = image.createGraphics();
+        try {
+            graphics.setColor(Color.WHITE);
+            graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+            graphics.drawString("ERROR - CSV line " + lineNumber, 16, 42);
+            graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 16));
+            graphics.drawString("Invalid point set", 16, 70);
+            graphics.drawString("See console for details", 16, 96);
+        } finally {
+            graphics.dispose();
+        }
+        return image;
+    }
+
     private static void createVideo(Path directory, int frames, Path output)
             throws IOException, InterruptedException {
         String ffmpeg = System.getenv("FFMPEG");
@@ -176,13 +195,24 @@ public class Projection {
             throw new IOException("Output directory does not exist: " + output.getParent());
         }
 
-        List<Plane> planes = CSVReader.readPlanes(args[1]);
+        List<CSVReader.Row> rows = CSVReader.readRows(args[1]);
         Volume volume = MRIReader.loadMRI(args[0]);
         int width = 0;
         int height = 0;
-        for (Plane plane : planes) {
-            width = Math.max(width, plane.width);
-            height = Math.max(height, plane.height);
+        int errors = 0;
+        for (CSVReader.Row row : rows) {
+            if (row.error != null) {
+                errors++;
+                System.err.println("Warning: " + row.error.getMessage());
+            } else {
+                width = Math.max(width, row.plane.width);
+                height = Math.max(height, row.plane.height);
+            }
+        }
+        if (errors > 0) {
+            // Keep the row number legible, including when every row is invalid.
+            width = Math.max(width, 320);
+            height = Math.max(height, 180);
         }
         // H.264 needs even image dimensions.
         width = width + width % 2;
@@ -195,11 +225,17 @@ public class Projection {
         Path temporaryVideo = null;
         try {
             long projectionTime = 0;
-            for (int i = 0; i < planes.size(); i++) {
-                long start = System.nanoTime();
-                long[][] values = project(volume, planes.get(i));
-                projectionTime += System.nanoTime() - start;
-                BufferedImage image = grayscale(values, width, height);
+            for (int i = 0; i < rows.size(); i++) {
+                CSVReader.Row row = rows.get(i);
+                BufferedImage image;
+                if (row.error != null) {
+                    image = errorFrame(width, height, row.lineNumber);
+                } else {
+                    long start = System.nanoTime();
+                    long[][] values = project(volume, row.plane);
+                    projectionTime += System.nanoTime() - start;
+                    image = grayscale(values, width, height);
+                }
                 String filename = String.format(Locale.ROOT, "frame_%06d.png", i);
                 Path frame = directory.resolve(filename);
                 if (!ImageIO.write(image, "png", frame.toFile())) {
@@ -208,15 +244,16 @@ public class Projection {
             }
             // Keep the old output if encoding fails.
             temporaryVideo = Files.createTempFile(output.getParent(), "mri-video-", ".mp4");
-            createVideo(directory, planes.size(), temporaryVideo);
+            createVideo(directory, rows.size(), temporaryVideo);
             Files.move(temporaryVideo, output, StandardCopyOption.REPLACE_EXISTING);
             System.out.printf(
                     Locale.ROOT,
                     "Created %s: %d frames, %dx%d, 30 playback FPS%n",
                     output,
-                    planes.size(),
+                    rows.size(),
                     width,
                     height);
+            System.out.println("Error frames: " + errors);
             System.out.printf(
                     Locale.ROOT,
                     "Projection-only total: %.3f ms (use Benchmark for warmed timing)%n",

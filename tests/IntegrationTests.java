@@ -148,6 +148,18 @@ public final class IntegrationTests {
 
     private static void checkFrames(Video video, List<String> rows, int width, int height) {
         for (int index = 0; index < rows.size(); index++) {
+            if (rows.get(index) == null) {
+                int bright = 0;
+                int black = 0;
+                for (int i = 0; i < width * height; i++) {
+                    int value = video.pixels[index * width * height + i] & 255;
+                    if (value > 180) bright++;
+                    if (value < 20) black++;
+                }
+                check(bright > 200 && black > width * height * 0.8,
+                        "marked error frame at index " + index);
+                continue;
+            }
             int[][] image = projectReference(rows.get(index));
             int[] expected = new int[width * height];
             int dx = (width - image[0].length) / 2;
@@ -156,15 +168,26 @@ public final class IntegrationTests {
                 System.arraycopy(image[y], 0, expected, (y + dy) * width + dx, image[y].length);
             }
             int sum = 0;
+            int contentSum = 0;
             int maximum = 0;
             for (int i = 0; i < expected.length; i++) {
                 int difference = Math.abs((video.pixels[index * expected.length + i] & 255) - expected[i]);
                 sum += difference;
+                int x = i % width - dx;
+                int y = i / width - dy;
+                if (x >= 0 && x < image[0].length && y >= 0 && y < image.length) {
+                    contentSum += difference;
+                }
                 maximum = Math.max(maximum, difference);
             }
             double mae = (double) sum / expected.length;
-            check(mae <= 8 && maximum <= 30, "frame " + index + " content/order: MAE="
-                    + mae + ", max=" + maximum);
+            double contentMae = (double) contentSum / (image.length * image[0].length);
+            // Tiny sections on the error canvas compress differently; also check their own area
+            // so the surrounding black pixels cannot hide a missing or incorrect section.
+            int maxTolerance = width >= 320 ? 80 : 30;
+            check(mae <= 8 && contentMae <= 12 && maximum <= maxTolerance,
+                    "frame " + index + " content/order: MAE=" + mae
+                    + ", section MAE=" + contentMae + ", max=" + maximum);
             System.out.printf(Locale.ROOT,
                     "Frame %d: independent grayscale reference, decoded MAE=%.3f, max error=%d%n",
                     index, mae, maximum);
@@ -225,10 +248,43 @@ public final class IntegrationTests {
                 check(failure.status != 0 && failure.stderr.contains("Usage:"), "argument validation");
             }
             Path badCsv = work.resolve("bad.csv");
-            Files.write(badCsv, Arrays.asList("NaN,0,0,1,0,0,0,1,0"), StandardCharsets.UTF_8);
+            List<String> invalidRows = Arrays.asList(
+                    "0,0,0,2,0,0,0,1,0", // unequal triangle sides
+                    "0,0,0,2,0,0,2,2,0,0,2,0", // crossing four-point sides
+                    "1,2,3", "NaN,0,0,1,0,0,0,1,0");
+            List<String> recoveryRows = new ArrayList<>();
+            recoveryRows.add(invalidRows.get(0)); // leading invalid row
+            recoveryRows.add(""); // diagnostics must use physical CSV line numbers
+            recoveryRows.add(rows.get(0));
+            recoveryRows.addAll(invalidRows.subList(1, invalidRows.size()));
+            recoveryRows.add(rows.get(1));
+            recoveryRows.add(invalidRows.get(0)); // trailing invalid row
+            Files.write(badCsv, recoveryRows, StandardCharsets.UTF_8);
+            Result recovered = application(work, null, volume, badCsv.toString(), output.toString());
+            check(recovered.status == 0 && recovered.stderr.contains("CSV line 1")
+                    && recovered.stderr.contains("CSV line 4")
+                    && recovered.stderr.contains("CSV line 8"), "row errors reported and recovered");
+            Video recovery = decode(work, output);
+            check("7".equals(recovery.metadata.get("nb_read_frames")), "one frame per nonempty row");
+            check("320".equals(recovery.metadata.get("width"))
+                    && "180".equals(recovery.metadata.get("height")), "legible error canvas");
+            check(recovery.pixels.length == 320 * 180 * 7, "recovery decoded frame count");
+            checkFrames(recovery, Arrays.asList(null, rows.get(0), null, null, null, rows.get(1), null),
+                    320, 180);
+            Files.write(badCsv, invalidRows, StandardCharsets.UTF_8);
+            Result allInvalid = application(work, null, volume, badCsv.toString(), output.toString());
+            check(allInvalid.status == 0, "all-invalid input creates error video");
+            Video errors = decode(work, output);
+            check("4".equals(errors.metadata.get("nb_read_frames")), "all-invalid frame count");
+            checkFrames(errors, Arrays.asList(null, null, null, null), 320, 180);
+            original = Files.readAllBytes(output);
+            Files.write(badCsv, Arrays.asList("", "  "), StandardCharsets.UTF_8);
             Result failure = application(work, null, volume, badCsv.toString(), output.toString());
-            check(failure.status != 0 && failure.stderr.contains("CSV line 1"), "CSV row error identifies location");
-            check(Arrays.equals(Files.readAllBytes(output), original), "invalid CSV preserves output");
+            check(failure.status != 0 && failure.stderr.contains("no planes"), "empty CSV remains fatal");
+            check(Arrays.equals(Files.readAllBytes(output), original), "empty CSV preserves output");
+            failure = application(work, null, volume, work.resolve("missing.csv").toString(), output.toString());
+            check(failure.status != 0, "missing CSV remains fatal");
+            check(Arrays.equals(Files.readAllBytes(output), original), "missing CSV preserves output");
             try (DirectoryStream<Path> files = Files.newDirectoryStream(work, "mri-video-*")) {
                 check(!files.iterator().hasNext(), "temporary video files removed");
             }

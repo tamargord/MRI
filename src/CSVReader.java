@@ -9,8 +9,32 @@ import java.util.List;
 public final class CSVReader {
     private CSVReader() {}
 
+    /** One nonempty CSV row, containing either a valid plane or its validation error. */
+    public static final class Row {
+        public final int lineNumber;
+        public final Plane plane;
+        public final IOException error;
+
+        private Row(int lineNumber, Plane plane, IOException error) {
+            this.lineNumber = lineNumber;
+            this.plane = plane;
+            this.error = error;
+        }
+    }
+
+    /** Strict API for callers that require every row to be valid. */
     public static List<Plane> readPlanes(String filename) throws IOException {
         List<Plane> planes = new ArrayList<>();
+        for (Row row : readRows(filename)) {
+            if (row.error != null) throw row.error;
+            planes.add(row.plane);
+        }
+        return planes;
+    }
+
+    /** Demo API: catches row validation exceptions so later rows can still be rendered. */
+    public static List<Row> readRows(String filename) throws IOException {
+        List<Row> rows = new ArrayList<>();
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(filename))) {
             String line;
             int lineNumber = 0;
@@ -31,15 +55,17 @@ public final class CSVReader {
                         double z = Double.parseDouble(fields[3 * i + 2].trim());
                         points[i] = new Point3D(x, y, z);
                     }
-                    planes.add(new Plane(points));
+                    rows.add(new Row(lineNumber, new Plane(points), null));
                 } catch (IllegalArgumentException e) {
-                    throw new IOException("CSV line " + lineNumber + ": " + e.getMessage(), e);
+                    IOException error = new IOException(
+                            "CSV line " + lineNumber + ": " + e.getMessage(), e);
+                    rows.add(new Row(lineNumber, null, error));
                 }
             }
         }
-        if (planes.isEmpty()) {
+        if (rows.isEmpty()) {
             throw new IOException("CSV contains no planes");
         }
-        return planes;
+        return rows;
     }
 }

@@ -229,11 +229,14 @@ public final class IntegrationTests {
             checkFrames(video, rows, width, height);
             check(Arrays.equals(Files.readAllBytes(stale), staleBytes), "stale PNG untouched and excluded");
             Path shorterCsv = work.resolve("one.csv");
-            Files.write(shorterCsv, Arrays.asList(rows.get(0)), StandardCharsets.UTF_8);
+            Files.write(shorterCsv, Arrays.asList("\uFEFF" + rows.get(0)), StandardCharsets.UTF_8);
             Result rerun = application(work, null, volume, shorterCsv.toString(), output.toString());
             check(rerun.status == 0, "overwrite previous video with shorter run: " + rerun.stderr);
             Video shorter = decode(work, output);
             check("1".equals(shorter.metadata.get("nb_read_frames")), "no leftover frames on rerun");
+            check(rerun.stderr.isEmpty() && "12".equals(shorter.metadata.get("width"))
+                    && "6".equals(shorter.metadata.get("height")), "BOM row renders without error frame");
+            checkFrames(shorter, Arrays.asList(rows.get(0)), 12, 6);
             byte[] original = Files.readAllBytes(output);
             // Java is a real executable that rejects FFmpeg's arguments, simulating encoder failure.
             for (String encoder : Arrays.asList(work.resolve("missing-ffmpeg").toString(), JAVA)) {

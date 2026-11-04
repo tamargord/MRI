@@ -83,8 +83,12 @@ public final class Volume {
                 .plus(directions[2].times(voxelPoint.z));
     }
 
-    /** Reads the nearest voxel in voxel coordinates, or zero outside the volume. */
+    /** Reads the nearest voxel, or zero for outside/nonfinite voxel coordinates. */
     public long sample(double x, double y, double z) {
+        // Math.round(NaN) is zero, which must not turn an invalid position into voxel zero.
+        if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)) {
+            return 0;
+        }
         long ix = Math.round(x), iy = Math.round(y), iz = Math.round(z);
         if (ix < 0 || iy < 0 || iz < 0 || ix >= sx || iy >= sy || iz >= sz) {
             return 0;

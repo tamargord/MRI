@@ -204,6 +204,14 @@ public final class RegressionTests {
                             && coded().sample(12, 0, 0) == 0
                             && coded().sample(0, 0, 99) == 0,
                     "outside volume");
+            // Use a nonzero first voxel: NaN rounds to zero in Java and used to read it.
+            Volume nonzero = new Volume(1, 1, 1, 8, false, new byte[] {99}, p(0, 0, 0), ID);
+            for (double invalid : new double[] {Double.NaN, Double.POSITIVE_INFINITY,
+                    Double.NEGATIVE_INFINITY}) {
+                check(nonzero.sample(invalid, 0, 0) == 0, "nonfinite sample x");
+                check(nonzero.sample(0, invalid, 0) == 0, "nonfinite sample y");
+                check(nonzero.sample(0, 0, invalid) == 0, "nonfinite sample z");
+            }
             // Analytic rectangle: row y samples source y+1; column x samples source x.
             long[][] rect =
                     Projection.project(coded(), p(0, 0, 2), p(6, 0, 2), p(0, 4, 2), p(6, 4, 2));
@@ -274,6 +282,16 @@ public final class RegressionTests {
                     mixed.size() == 2 && mixed.get(0).height != mixed.get(1).height,
                     "mixed CSV order");
             Path csv = temp.resolve("bad.csv");
+            String validRow = "0,0,0,2,0,0,0,2,0";
+            writeText(csv, "\uFEFF" + validRow + "\n");
+            check(CSVReader.readPlanes(csv.toString()).size() == 1, "UTF-8 BOM before valid row");
+            writeText(csv, "\uFEFF\n\n" + validRow + "\n1,2,3\n");
+            List<CSVReader.Row> bomRows = CSVReader.readRows(csv.toString());
+            check(bomRows.size() == 2 && bomRows.get(0).plane != null
+                    && bomRows.get(0).lineNumber == 3 && bomRows.get(1).error != null
+                    && bomRows.get(1).lineNumber == 4, "BOM and blank lines preserve CSV locations");
+            writeText(csv, "\uFEFF");
+            badCSV(csv);
             for (String line :
                     Arrays.asList(
                             "",

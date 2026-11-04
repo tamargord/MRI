@@ -40,6 +40,10 @@ public final class CSVReader {
             int lineNumber = 0;
             while ((line = reader.readLine()) != null) {
                 lineNumber++;
+                // Editors may write a UTF-8 signature before the first coordinate or blank line.
+                if (lineNumber == 1 && line.startsWith("\uFEFF")) {
+                    line = line.substring(1);
+                }
                 if (line.trim().isEmpty()) {
                     continue;
                 }

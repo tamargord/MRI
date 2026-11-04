@@ -45,7 +45,7 @@ If IntelliJ reports a missing JDK, select your Java 8 installation under **File 
 
 ## Input format
 
-The CSV has no header. Each nonempty row contains either nine numbers for three points or twelve numbers for four points. Each point is written as `x,y,z`, using the MRI's world coordinate system.
+The CSV has no header. An optional UTF-8 byte-order mark at the start of the file is accepted. Each nonempty row contains either nine numbers for three points or twelve numbers for four points. Each point is written as `x,y,z`, using the MRI's world coordinate system.
 
 - **Three points, `a,b,c`:** an isosceles triangle. The two sides from `a` must differ in length by less than `0.001`, and the points must not be on one straight line.
 - **Four points, `a1,a2,b,c`:** a section with sides `a1` to `b` and `a2` to `c` equal within the same tolerance. The points must be coplanar, the top edge cannot be longer than the bottom edge, and crossing or zero-length sides are rejected. The two top points may be the same, which also lets the algorithm handle a triangle.
@@ -66,7 +66,7 @@ Invalid nonempty rows produce a black error frame marked with the physical CSV l
 
 I used small volumes with known values to check the raw projection results. The tests cover coordinate conversion, rotated axes, both plane shapes, rounding, out-of-bounds samples, and invalid input. A separate Java integration test checks the running Java program and the encoded video, including frame count, order, image content, and failed runs. All application and test code is Java 8, with no third-party Java libraries.
 
-The recorded Java 8 run on **4 November 2026** passed **1002 regression checks** and **47 video/command-line checks** using the Java test suites. These are individual checks, including repeated pixel and file-format checks, rather than 1002 separate test cases.
+The recorded Java 8 run on **4 November 2026** passed **1014 regression checks** and **49 video/command-line checks** using the Java test suites. These are individual checks, including repeated pixel and file-format checks, rather than 1014 separate test cases.
 
 To run the checks with JDK 8, FFmpeg, and FFprobe available:
 
@@ -76,7 +76,7 @@ java -cp out RegressionTests
 java -cp out IntegrationTests
 ```
 
-The speed test uses a **500 × 500 × 500 unsigned-byte volume**. After warmup, it measures repeated projections of a rectangle, a triangle, and an oblique section. On the test computer (Windows 11, Ryzen 9 7940HS, about 32 GB RAM), the slowest measured batch in the requirements review on 4 November 2026 was **755.018 projection FPS**, above the assignment's 30 FPS minimum and 100 FPS target.
+The speed test uses a **500 × 500 × 500 unsigned-byte volume**. After warmup, it measures repeated projections of a rectangle, a triangle, and an oblique section. On the test computer (Windows 11, Ryzen 9 7940HS, about 32 GB RAM), the slowest measured batch after the bug fixes on 4 November 2026 was **701.922 projection FPS**, above the assignment's 30 FPS minimum and 100 FPS target.
 
 ```powershell
 java -Xms256m -Xmx1g -cp out Benchmark

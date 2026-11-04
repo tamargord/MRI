@@ -163,3 +163,19 @@ The [verification log](experiments/java8-error-recovery-2026-11-04.txt) records 
 ## Complete four-page review (2026-11-04)
 
 The [requirements review](REQUIREMENTS_REVIEW.md) records a fresh source audit, warning-free Java 8 compilation, 1002 passing regression checks, 47 passing end-to-end checks, all four demo decoding checks, and a fresh 90-frame MRI run. The new benchmark minimums were 755.018 FPS for the rectangle, 1531.286 FPS for the triangle, and 773.636 FPS for the oblique section. Its table records mean/minimum/maximum measurements and the timing method. Public repository access remains unverified because anonymous access returns HTTP 404; the submission file is ready, while Moodle and form submission remain external steps.
+
+## Bug fixes and verification (2026-11-04)
+
+Two defects were reproduced before changing the implementation. A valid UTF-8 CSV beginning with a byte-order mark generated a validation warning and an error frame; the reader now removes only an initial BOM before parsing or skipping blank lines. Tests verify a valid first row, BOM-only input, physical line numbering, and the decoded first frame through the CLI. Separately, sampling a NaN coordinate returned a nonzero first voxel because Java rounds NaN to zero. Sampling now returns zero for any nonfinite coordinate; tests use a nonzero first voxel and exercise all three axes with NaN and both infinities.
+
+Both new regression failures were observed before the fixes. After fixing them, Java 8 compilation with `-source 1.8 -target 1.8 -Xlint:all` passed without warnings, RegressionTests passed 1014 checks, and IntegrationTests passed 49 checks in headless mode. The BOM-prefixed one-row video matches the independent reference (MAE 1.736, maximum error 5). Earlier content checks and output-preservation cases still pass.
+
+Because the finite-coordinate guard runs in the sampling loop, the benchmark was rerun on the same volume with the same warmup and batch sizes:
+
+| Plane | Mean batch FPS | Minimum batch FPS | Maximum batch FPS |
+| --- | --- | --- | --- |
+| Rectangle | 713.434 | 701.922 | 728.904 |
+| Triangle | 1431.911 | 1419.201 | 1449.280 |
+| Oblique | 719.216 | 717.462 | 722.147 |
+
+All batches still exceed the 30 FPS minimum and 100 FPS target. These are projection-only measurements; the earlier pre-fix measurements remain historical results. The [verification log](experiments/java8-bug-fixes-2026-11-04.txt) contains commands, outputs, all benchmark batches, and exit statuses.

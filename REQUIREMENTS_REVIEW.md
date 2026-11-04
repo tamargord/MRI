@@ -47,3 +47,7 @@ FFprobe counted frames and reported metadata; FFmpeg fully decoded each file wit
 | output/audit-mri-2026-11-04.mp4 (fresh, ignored) | 90 | 100 x 106 | 30 | 3.000000 |
 
 No direct 3D Slicer pixel comparison was performed or required by the written assignment. Detached/floating-point NRRDs and automatic LPS/RAS conversion remain outside the documented integer-volume scope. The review does not verify unprovided classroom instructions or Moodle/form submission state.
+
+## Subsequent bug fixes on 2026-11-04
+
+The earlier audit results above describe commit `0bd4068`. Follow-up bug checks found and reproduced two edge cases: an initial UTF-8 CSV BOM created a false error frame, and direct NaN voxel sampling read index zero. Commit `2d7cad9` fixes both. Fresh warning-free Java 8 compilation, 1014 regression checks and 49 end-to-end checks pass. The post-fix benchmark minimum is 701.922 FPS, still above both assignment targets. See [EXPERIMENT.md](EXPERIMENT.md#bug-fixes-and-verification-2026-11-04) and the [new verification log](experiments/java8-bug-fixes-2026-11-04.txt). Submission access and external submission status were not changed by these fixes.

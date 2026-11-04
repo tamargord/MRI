@@ -56,7 +56,7 @@ For each row:
 2. Find the current left and right endpoints. Call their distance `span`.
 3. Calculate the unit vector from left to right. Sample at whole-unit distances `k`, from 0 through `floor(span + 1e-9)`.
 4. Center the row by placing each sample at `round((B-span)/2 + k)`. Skip columns outside the image. If the span is almost zero, sample one pixel in the middle.
-5. Convert the sample to voxel coordinates. Round each coordinate with `Math.round`, then read that value from the MRI. A rounded index outside the volume gives zero.
+5. Convert the sample to voxel coordinates. Round each coordinate with `Math.round`, then read that value from the MRI. A rounded index outside the volume gives zero. Direct sampling also returns zero for NaN or infinite voxel coordinates, before rounding, because Java rounds NaN to index zero.
 
 A span of `1.6` gives samples at 0 and 1. The `1e-9` tolerance is there for floating-point error near a whole number. Half-integer ties use Java rounding, toward positive infinity. Both plane shapes stop at their endpoints on a fractional final row.
 

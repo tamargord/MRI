@@ -1,0 +1,46 @@
+Bug-fix verification, 2026-11-04
+Regression tests reproduced both failures before the fixes.
+
+$ output\java8\jdk8u504-b01\bin\javac.exe -source 1.8 -target 1.8 -Xlint:all -d out src\Benchmark.java src\CSVReader.java src\DatasetGenerator.java src\MRIReader.java src\Plane.java src\Point3D.java src\Projection.java src\Volume.java tests\IntegrationTests.java tests\RegressionTests.java
+Exit: 0
+
+$ output\java8\jdk8u504-b01\bin\java.exe -cp out RegressionTests
+PASS: 1014 checks (loading, transforms, analytic projections, malformed inputs, display)
+Exit: 0
+
+$ output\java8\jdk8u504-b01\bin\java.exe -Djava.awt.headless=true -cp out IntegrationTests
+Frame 0: independent grayscale reference, decoded MAE=2.094, max error=9
+Frame 1: independent grayscale reference, decoded MAE=4.521, max error=21
+Frame 0: independent grayscale reference, decoded MAE=1.736, max error=5
+Frame 1: independent grayscale reference, decoded MAE=0.017, max error=63
+Frame 5: independent grayscale reference, decoded MAE=0.010, max error=22
+PASS: 49 end-to-end checks
+Exit: 0
+
+$ output\java8\jdk8u504-b01\bin\java.exe -Xms256m -Xmx1g -cp out Benchmark
+java=1.8.0_504-b01; vm=OpenJDK 64-Bit Server VM
+os=Windows 11 10.0 amd64
+logical_processors=16; max_heap_bytes=954728448
+volume=500x500x500 uint8; value=(x+3*y+7*z)&255; warmup=150; iterations_per_batch=300; batches=5
+Timed work includes geometry setup, output allocation, sampling, and one observed pixel per projection; excludes loading, rendering and encoding.
+plane,width,height,batch,total_ms,average_ms,fps,checksum
+rectangle,500,500,1,427.398200,1.424661,701.922,37948
+rectangle,500,500,2,421.541300,1.405138,711.674,37948
+rectangle,500,500,3,416.012300,1.386708,721.133,37948
+rectangle,500,500,4,426.417900,1.421393,703.535,37948
+rectangle,500,500,5,411.576600,1.371922,728.904,37948
+SUMMARY rectangle mean_fps=713.434 min_fps=701.922 max_fps=728.904 mandatory_30=PASS expected_100=PASS
+triangle,500,472,1,210.808000,0.702693,1423.096,11909
+triangle,500,472,2,206.999300,0.689998,1449.280,11909
+triangle,500,472,3,210.860300,0.702868,1422.743,11909
+triangle,500,472,4,211.386600,0.704622,1419.201,11909
+triangle,500,472,5,207.578900,0.691930,1445.234,11909
+SUMMARY triangle mean_fps=1431.911 min_fps=1419.201 max_fps=1449.280 mandatory_30=PASS expected_100=PASS
+oblique,500,500,1,417.897000,1.392990,717.880,38240
+oblique,500,500,2,415.428000,1.384760,722.147,38240
+oblique,500,500,3,418.140500,1.393802,717.462,38240
+oblique,500,500,4,416.810800,1.389369,719.751,38240
+oblique,500,500,5,417.338800,1.391129,718.840,38240
+SUMMARY oblique mean_fps=719.216 min_fps=717.462 max_fps=722.147 mandatory_30=PASS expected_100=PASS
+observable_sink=38240
+Exit: 0

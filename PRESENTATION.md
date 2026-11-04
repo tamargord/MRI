@@ -85,9 +85,9 @@ In the inner projection loop, the code uses a converted starting point plus `k` 
 
 Open [EXPERIMENT.md](EXPERIMENT.md), then point to the corresponding test code or saved log.
 
-- `RegressionTests.java`: 1002 checks, including known voxel values, rotated coordinates, triangles, four-point sections, rounding and invalid inputs. These are individual checks, including repeated pixel checks.
-- `IntegrationTests.java`: 47 checks of the running Java program and encoded video, including frame order, count, content, errors and reruns. It calculates expected images independently of the application code. Both test suites passed on Java 8 on 2026-11-04; all application and test code is Java.
-- `Benchmark.java`: a 500 x 500 x 500 unsigned-byte volume, 150 warmup projections per plane, then five batches of 300. In the final check on 2026-10-29, the slowest batch was 735.346 projection FPS. The assignment requires 30 FPS and expects 100 FPS.
+- `RegressionTests.java`: 1014 checks, including known voxel values, rotated coordinates, triangles, four-point sections, rounding and invalid inputs. These are individual checks, including repeated pixel checks.
+- `IntegrationTests.java`: 49 checks of the running Java program and encoded video, including frame order, count, content, errors and reruns. It calculates expected images independently of the application code. Both test suites passed on Java 8 on 2026-11-04; all application and test code is Java.
+- `Benchmark.java`: a 500 x 500 x 500 unsigned-byte volume, 150 warmup projections per plane, then five batches of 300. After the bug fixes on 2026-11-04, the slowest batch was 701.922 projection FPS. The assignment requires 30 FPS and expects 100 FPS.
 
 The video plays at 30 FPS. Benchmark FPS measures how quickly the algorithm computes images; loading, PNG creation and MP4 encoding are excluded. Results depend on the computer and the tested planes.
 

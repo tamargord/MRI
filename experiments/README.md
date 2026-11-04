@@ -2,6 +2,8 @@
 
 Current Java 8 version:
 
+- [java8-bug-fixes-2026-11-04.txt](java8-bug-fixes-2026-11-04.txt): CSV BOM and nonfinite sampling fixes, warning-free compilation, 1014 regression checks, 49 end-to-end checks, and post-fix benchmark results.
+
 - [java8-error-recovery-2026-11-04.txt](java8-error-recovery-2026-11-04.txt): added-page implementation, warning-free compilation, 1002 regression checks, 47 end-to-end checks, and five-frame recovery demo metadata.
 
 - [java8-java-only-tests-2026-11-02.txt](java8-java-only-tests-2026-11-02.txt): warning-free Java 8 compilation and both Java test suites after converting the video integration tests to Java.

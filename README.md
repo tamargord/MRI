@@ -115,4 +115,4 @@ The added assignment page is implemented by recovering from per-row validation e
 java -cp out Projection MRHead_1.nrrd datasets/error-recovery.csv datasets/error-recovery.mp4
 ```
 
-The [error-recovery video](datasets/error-recovery.mp4) has five frames: valid, error, valid, error, valid. [SUBMISSION.md](SUBMISSION.md) lists the Moodle text-file and form steps. Replace the student-ID placeholder in `submission.txt` before submitting. The repository must be public; this still needs checking in GitHub settings because anonymous access returned HTTP 404 during the 4 November check.
+The [error-recovery video](datasets/error-recovery.mp4) has five frames: valid, error, valid, error, valid. [SUBMISSION.md](SUBMISSION.md) lists the Moodle text-file and form steps. The supplied student ID is filled in `submission.txt`; review it before submitting. The repository must be public; this still needs checking in GitHub settings because anonymous access returned HTTP 404 during the 4 November check.
